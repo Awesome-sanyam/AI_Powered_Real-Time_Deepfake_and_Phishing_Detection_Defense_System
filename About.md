@@ -154,7 +154,7 @@ ai-defence-system/
 ├── About.md                          ← This document
 ├── .env.example                      ← Env var template
 ├── .gitignore
-├── docker-compose.yml                ← Neo4j + Redis (optional local)
+├── docker-compose.yml                ← PostgreSQL + Redis + Neo4j (optional local)
 │
 ├── backend/                          ← Django Orchestration Layer
 │   ├── manage.py
@@ -950,6 +950,7 @@ py2neo>=2021.2
 cryptography>=42.0
 python-dotenv>=1.0
 gunicorn>=22.0
+httpx>=0.27
 ```
 
 ### `ai_engine/requirements.txt`
@@ -960,12 +961,14 @@ opencv-python>=4.9.0.80
 mediapipe>=0.10.14
 librosa>=0.10.2
 numpy>=1.26
+soundfile>=0.12
 fastapi>=0.111
 uvicorn[standard]>=0.30
 llama-cpp-python>=0.2.85
 cryptography>=42.0
 python-dotenv>=1.0
 memory-profiler>=0.61
+pydantic>=2.7
 ```
 
 ### `flutter_dashboard/pubspec.yaml` (dependencies section)
