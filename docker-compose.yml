@@ -1,6 +1,27 @@
 version: "3.9"
 
 services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: defence_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: defence_db
+      POSTGRES_USER: defence_user
+      POSTGRES_PASSWORD: defence_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U defence_user -d defence_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Celery broker + Channels layer) ───────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: defence_redis
@@ -8,7 +29,13 @@ services:
       - "6379:6379"
     restart: unless-stopped
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ── Neo4j (Threat graph) ─────────────────────────────────────────────────────
   neo4j:
     image: neo4j:5-community
     container_name: defence_neo4j
@@ -23,7 +50,13 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
 volumes:
+  postgres_data:
   neo4j_data:
   neo4j_logs:
