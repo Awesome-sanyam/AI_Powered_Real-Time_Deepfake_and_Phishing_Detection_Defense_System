@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# AI model weights (large binary files)
+models/*.bin
+models/*.gguf
+models/*.pt
+models/*.pth
+models/*.onnx
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Flutter
+flutter_dashboard/.dart_tool/
+flutter_dashboard/.flutter-plugins
+flutter_dashboard/.flutter-plugins-dependencies
+flutter_dashboard/build/
+flutter_dashboard/*.iml
+flutter_dashboard/.pub-cache/
+flutter_dashboard/.pub/
+
+# Docker
+.docker/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Secrets
+*.pem
+*.key
+*.crt

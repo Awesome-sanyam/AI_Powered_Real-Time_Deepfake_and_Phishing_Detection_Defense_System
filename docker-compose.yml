@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: defence_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: defence_neo4j
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j_password
+      - NEO4J_JAVA_OPTS=-Xmx512m -Xms256m
+      - NEO4J_dbms_memory_pagecache_size=256m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
