@@ -2,26 +2,27 @@ version: "3.9"
 
 services:
 
-  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  # ── PostgreSQL 16 ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: defence_postgres
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: defence_db
-      POSTGRES_USER: defence_user
-      POSTGRES_PASSWORD: defence_password
+      POSTGRES_DB: ${POSTGRES_DB:-defence_db}
+      POSTGRES_USER: ${POSTGRES_USER:-defence_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-defence_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U defence_user -d defence_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-defence_user} -d ${POSTGRES_DB:-defence_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
-  # ── Redis (Celery broker + Channels layer) ───────────────────────────────────
+  # ── Redis 7 (Celery broker + Django Channels layer) ──────────────────────────
   redis:
     image: redis:7-alpine
     container_name: defence_redis
@@ -34,8 +35,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
-  # ── Neo4j (Threat graph) ─────────────────────────────────────────────────────
+  # ── Neo4j 5 Community (Threat Graph) ─────────────────────────────────────────
   neo4j:
     image: neo4j:5-community
     container_name: defence_neo4j
@@ -43,9 +45,12 @@ services:
       - "7474:7474"   # Browser UI
       - "7687:7687"   # Bolt protocol
     environment:
-      - NEO4J_AUTH=neo4j/neo4j_password
-      - NEO4J_JAVA_OPTS=-Xmx512m -Xms256m
-      - NEO4J_dbms_memory_pagecache_size=256m
+      # Strict symmetric 512 MB heap — satisfies M4 16 GB RAM constraint
+      NEO4J_JAVA_OPTS: "-Xms512m -Xmx512m"
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/neo4j_password}
+      NEO4J_dbms_memory_pagecache_size: 256m
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 512m
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
@@ -55,6 +60,7 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:
