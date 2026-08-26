@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Defence System - SOC Dashboard</title>
+    <!-- Tailwind CSS (via CDN for simplicity) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Base styles for dark theme -->
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 glass-panel flex flex-col h-full border-r border-slate-700">
+        <div class="p-6 border-b border-slate-700 flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved text-blue-500 text-2xl"></i>
+            <h1 class="text-lg font-bold tracking-wider">DEFENCE<span class="text-blue-500">SYS</span></h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="{% url 'dashboard:index' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors {% if request.resolver_match.app_name == 'dashboard' %}bg-slate-700 text-blue-400{% else %}text-slate-300{% endif %}">
+                <i class="fa-solid fa-chart-line w-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'deepfake:monitor' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors {% if request.resolver_match.app_name == 'deepfake' %}bg-slate-700 text-blue-400{% else %}text-slate-300{% endif %}">
+                <i class="fa-solid fa-video w-5"></i>
+                <span>Deepfake Monitor</span>
+            </a>
+            <a href="{% url 'phishing:scanner' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors {% if request.resolver_match.app_name == 'phishing' %}bg-slate-700 text-blue-400{% else %}text-slate-300{% endif %}">
+                <i class="fa-solid fa-envelope-open-text w-5"></i>
+                <span>Phishing Scanner</span>
+            </a>
+            <a href="{% url 'threat_graph:view' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors {% if request.resolver_match.app_name == 'threat_graph' %}bg-slate-700 text-blue-400{% else %}text-slate-300{% endif %}">
+                <i class="fa-solid fa-project-diagram w-5"></i>
+                <span>Threat Graph</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-700">
+            <div class="flex items-center gap-3 px-4 py-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
+                <span class="text-sm text-slate-400">System Online</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <!-- Topbar -->
+        <header class="h-16 glass-panel border-b border-slate-700 flex items-center justify-between px-6 z-10">
+            <h2 class="text-xl font-semibold text-slate-200">{% block header_title %}Overview{% endblock %}</h2>
+            <div class="flex items-center gap-4">
+                <button id="alert-bell" class="relative p-2 text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-bell"></i>
+                    <span id="alert-badge" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-auto p-6 relative">
+            {% block content %}{% endblock %}
+            
+            <!-- Global Alert Toast Container -->
+            <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3"></div>
+        </div>
+    </main>
+
+    <!-- Global WebSocket Client for Alerts -->
+    <script src="{% static 'js/ws_client.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize global alert feed
+            window.alertClient = new ThreatWSClient('alerts/');
+            window.alertClient.onAlert = (alertData) => {
+                showToast(alertData.title, alertData.message, alertData.type);
+                document.getElementById('alert-badge').classList.remove('hidden');
+            };
+            window.alertClient.connect();
+        });
+
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let colorClass = 'border-blue-500 bg-blue-500/10';
+            let iconClass = 'fa-info-circle text-blue-500';
+            
+            if (type === 'deepfake' || type === 'phishing') {
+                colorClass = 'border-red-500 bg-red-500/10';
+                iconClass = 'fa-triangle-exclamation text-red-500';
+            }
+
+            toast.className = `glass-panel p-4 rounded-lg border-l-4 ${colorClass} w-80 transform transition-all duration-300 translate-x-full opacity-0 shadow-lg`;
+            toast.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid ${iconClass} mt-1"></i>
+                    <div>
+                        <h4 class="font-semibold text-sm">${title}</h4>
+                        <p class="text-xs text-slate-400 mt-1">${message}</p>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 50);
+
+            // Animate out
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

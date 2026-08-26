@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block header_title %}SOC Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <!-- Threat Summary Cards -->
+    <div class="glass-panel p-6 rounded-xl border-t-4 border-blue-500">
+        <h3 class="text-slate-400 text-sm uppercase tracking-wider mb-2">Total Scans Today</h3>
+        <p class="text-3xl font-bold text-white">0</p>
+    </div>
+    <div class="glass-panel p-6 rounded-xl border-t-4 border-red-500">
+        <h3 class="text-slate-400 text-sm uppercase tracking-wider mb-2">High Risk Detected</h3>
+        <p class="text-3xl font-bold text-white">0</p>
+    </div>
+    <div class="glass-panel p-6 rounded-xl border-t-4 border-green-500">
+        <h3 class="text-slate-400 text-sm uppercase tracking-wider mb-2">System Health</h3>
+        <p class="text-3xl font-bold text-white">Optimal</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[500px]">
+    <!-- Live Alert Feed -->
+    <div class="glass-panel rounded-xl flex flex-col h-full overflow-hidden">
+        <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+                <i class="fa-solid fa-tower-broadcast text-blue-400"></i> Live Alert Feed
+            </h3>
+        </div>
+        <div id="dashboard-feed" class="flex-1 overflow-auto p-4 space-y-3">
+            <p class="text-slate-500 text-center italic mt-10">Waiting for live events...</p>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="glass-panel rounded-xl flex flex-col h-full overflow-hidden">
+        <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-yellow-400"></i> Quick Actions
+            </h3>
+        </div>
+        <div class="p-6 grid grid-cols-2 gap-4">
+            <a href="{% url 'deepfake:monitor' %}" class="glass-panel p-6 rounded-xl text-center hover:bg-slate-700 transition-colors group cursor-pointer">
+                <i class="fa-solid fa-video text-3xl text-slate-400 group-hover:text-blue-400 transition-colors mb-3"></i>
+                <h4 class="font-semibold">Start Monitor</h4>
+            </a>
+            <a href="{% url 'phishing:scanner' %}" class="glass-panel p-6 rounded-xl text-center hover:bg-slate-700 transition-colors group cursor-pointer">
+                <i class="fa-solid fa-envelope text-3xl text-slate-400 group-hover:text-blue-400 transition-colors mb-3"></i>
+                <h4 class="font-semibold">Scan Email</h4>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Tie into the global alert client to render feed items
+        const feedContainer = document.getElementById('dashboard-feed');
+        
+        const originalOnAlert = window.alertClient.onAlert;
+        window.alertClient.onAlert = (alertData) => {
+            // Call original to show toast
+            if(originalOnAlert) originalOnAlert(alertData);
+            
+            // Remove waiting text if exists
+            if (feedContainer.querySelector('.italic')) {
+                feedContainer.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = 'glass-panel p-3 rounded-lg border-l-2 border-red-500 text-sm';
+            item.innerHTML = `
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-bold text-red-400">${alertData.title}</span>
+                    <span class="text-xs text-slate-500">${new Date(alertData.timestamp).toLocaleTimeString()}</span>
+                </div>
+                <p class="text-slate-300">${alertData.message}</p>
+            `;
+            feedContainer.prepend(item);
+        };
+    });
+</script>
+{% endblock %}

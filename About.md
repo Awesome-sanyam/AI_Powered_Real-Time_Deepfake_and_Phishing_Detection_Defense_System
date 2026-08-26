@@ -40,15 +40,15 @@ This is a **zero-trust, real-time GenAI threat detection platform** with three p
 ╚══════════════════════════════════════════════════════════════════════════════════╝
 
   ┌─────────────────────────────────────────────────────────────────────────────┐
-  │                         FLUTTER SOC DASHBOARD                               │
-  │                          (Dart — Cross-Platform)                             │
+  │                   DJANGO TEMPLATE SOC DASHBOARD                             │
+  │               (Django HTML5 + Vanilla JS WebSockets)                        │
   │                                                                              │
   │  ┌─────────────┐  ┌───────────────┐  ┌──────────────┐  ┌────────────────┐  │
   │  │ Live Video  │  │ Threat Graph  │  │  Alert Feed  │  │ Identity Vault │  │
   │  │   Monitor   │  │  Visualizer   │  │  (WebSocket) │  │  (ECDSA Keys)  │  │
   │  └──────┬──────┘  └───────┬───────┘  └──────┬───────┘  └───────┬────────┘  │
   └─────────┼─────────────────┼─────────────────┼──────────────────┼───────────┘
-            │ WebSocket/REST  │ Cypher Queries   │ WS Push          │ REST
+            │ WebSocket/REST  │ REST             │ WS Push          │ REST
             ▼                 ▼                  ▼                  ▼
   ┌─────────────────────────────────────────────────────────────────────────────┐
   │                     DJANGO BACKEND (Orchestration Layer)                     │
@@ -131,11 +131,11 @@ This is a **zero-trust, real-time GenAI threat detection platform** with three p
 ### Frontend
 | Tool | Purpose |
 |---|---|
-| Flutter 3.x | Cross-platform SOC Dashboard (Dart) |
-| `web_socket_channel` | Real-time alert streaming |
-| `fl_chart` | Threat analytics charts |
-| `flutter_riverpod` | State management |
-| `dio` | HTTP REST client |
+| Django HTML5 Templates | Server-rendered SOC Dashboard |
+| Tailwind CSS (CDN) | Styling and dark theme UI |
+| Vanilla JavaScript | Browser-native logic |
+| `WebSocket` API | Real-time alert and video streaming |
+| D3.js / Chart.js | Threat analytics charts |
 
 ### Infrastructure
 | Service | Local Setup |
@@ -200,15 +200,32 @@ ai-defence-system/
 │   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   │
-│   │   └── threat_graph/             ← Neo4j integration
-│   │       ├── __init__.py
-│   │       ├── graph_client.py       ← py2neo connection & queries
-│   │       ├── models.py             ← Graph entity definitions
-│   │       ├── serializers.py
-│   │       ├── urls.py
-│   │       └── views.py
+│   │   ├── threat_graph/             ← Neo4j integration
+│   │   │   ├── __init__.py
+│   │   │   ├── graph_client.py       ← py2neo connection & queries
+│   │   │   ├── models.py             ← Graph entity definitions
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   └── core/                     ← Shared utilities, base models
 │   │
-│   └── routing.py                    ← Channels URL routing
+│   ├── routing.py                    ← Channels URL routing
+│   │
+│   ├── templates/                    ← Django Native HTML5 Templates
+│   │   ├── base.html                 ← Master layout with Tailwind CSS
+│   │   ├── dashboard/
+│   │   │   └── index.html            ← Main SOC Dashboard
+│   │   ├── deepfake/
+│   │   │   └── monitor.html          ← Live Stream View
+│   │   ├── phishing/
+│   │   │   └── scanner.html          ← Phishing Scanner View
+│   │   └── threat_graph/
+│   │       └── view.html             ← Neo4j Graph Visualizer
+│   │
+│   └── static/                       ← Static assets (JS, CSS, images)
+│       └── js/
+│           └── ws_client.js          ← Vanilla JS WebSocket connection logic
 │
 ├── ai_engine/                        ← Python AI Microservices (standalone)
 │   ├── requirements.txt
@@ -235,58 +252,6 @@ ai-defence-system/
 │   │   └── ecdsa_service.py          ← Key lifecycle, sign, verify
 │   │
 │   └── server.py                     ← FastAPI/Uvicorn micro-server exposing AI endpoints
-│
-├── flutter_dashboard/                ← Flutter SOC Dashboard
-│   ├── pubspec.yaml
-│   ├── lib/
-│   │   ├── main.dart
-│   │   ├── app.dart                  ← MaterialApp, theme, routing
-│   │   │
-│   │   ├── core/
-│   │   │   ├── constants.dart
-│   │   │   ├── api_client.dart       ← Dio REST client
-│   │   │   └── ws_client.dart        ← WebSocket channel client
-│   │   │
-│   │   ├── features/
-│   │   │   ├── dashboard/
-│   │   │   │   ├── dashboard_screen.dart
-│   │   │   │   └── widgets/
-│   │   │   │       ├── threat_summary_card.dart
-│   │   │   │       └── live_alert_feed.dart
-│   │   │   │
-│   │   │   ├── deepfake_monitor/
-│   │   │   │   ├── deepfake_screen.dart
-│   │   │   │   └── widgets/
-│   │   │   │       ├── video_stream_view.dart
-│   │   │   │       └── analysis_overlay.dart
-│   │   │   │
-│   │   │   ├── phishing_scanner/
-│   │   │   │   ├── phishing_screen.dart
-│   │   │   │   └── widgets/
-│   │   │   │       └── scan_result_card.dart
-│   │   │   │
-│   │   │   ├── threat_graph/
-│   │   │   │   ├── graph_screen.dart
-│   │   │   │   └── widgets/
-│   │   │   │       └── neo4j_graph_view.dart
-│   │   │   │
-│   │   │   └── identity/
-│   │   │       ├── identity_screen.dart
-│   │   │       └── widgets/
-│   │   │           └── key_vault_card.dart
-│   │   │
-│   │   ├── models/
-│   │   │   ├── deepfake_result.dart
-│   │   │   ├── phishing_report.dart
-│   │   │   └── threat_node.dart
-│   │   │
-│   │   └── providers/
-│   │       ├── deepfake_provider.dart
-│   │       ├── phishing_provider.dart
-│   │       └── threat_graph_provider.dart
-│   │
-│   └── test/
-│       └── widget_test.dart
 │
 ├── scripts/                          ← Dev/ops helper scripts
 │   ├── setup_env.sh                  ← One-shot environment bootstrap
@@ -324,12 +289,12 @@ ai-defence-system/
 - [ ] Stub out `CrossModalVerificationEngine` class (no model yet)
 - [ ] Start minimal FastAPI `server.py` exposing `/health` and `/scan/frame`
 
-#### Flutter Tasks
-- [ ] Create Flutter project: `flutter create flutter_dashboard`
-- [ ] Add dependencies to `pubspec.yaml` (`riverpod`, `dio`, `web_socket_channel`, `fl_chart`)
-- [ ] Scaffold feature screens and navigation with `go_router`
-- [ ] Implement `api_client.dart` and `ws_client.dart` core services
-- [ ] Build a static mock SOC dashboard layout (no live data yet)
+#### Frontend Tasks
+- [ ] Scaffold `templates/` directory in `backend/`
+- [ ] Create `base.html` with Tailwind CSS via CDN and base structure
+- [ ] Scaffold basic SOC dashboard layout in `dashboard/index.html` (no live data yet)
+- [ ] Create `static/js/ws_client.js` for modular WebSocket logic
+- [ ] Verify JS client can connect to `ws/deepfake/<session_id>/` and `ws/alerts/`
 
 #### Infrastructure Tasks
 - [ ] Write `docker-compose.yml` for Neo4j + Redis
@@ -387,18 +352,18 @@ ai-defence-system/
 > **Goal:** Live end-to-end pipeline. Flutter talks to Django talks to AI.
 
 - [ ] Upgrade WebSocket consumer to accept binary frame chunks and dispatch to Celery
-- [ ] Implement server-sent verdicts back over WebSocket to Flutter
-- [ ] Build Flutter `deepfake_screen.dart` with live camera feed + overlay
-  - Use `camera` package to capture frames
-  - Send encoded JPEGs via WebSocket
-  - Render verdicts as overlay badges
-- [ ] Build Flutter `phishing_screen.dart` with email/URL paste-and-scan UI
-- [ ] Build Flutter `threat_graph_screen.dart` with Neo4j query results
-  - Visualize as interactive node graph
+- [ ] Implement server-sent verdicts back over WebSocket to Frontend
+- [ ] Build `deepfake/monitor.html` with live camera feed + overlay
+  - Use native `navigator.mediaDevices.getUserMedia` to capture frames
+  - Send encoded JPEGs via WebSocket using `ws_client.js`
+  - Render verdicts as overlay badges in DOM
+- [ ] Build `phishing/scanner.html` with email/URL paste-and-scan UI
+- [ ] Build `threat_graph/view.html` with Neo4j query results
+  - Visualize as interactive node graph (using D3.js/Vis.js)
 - [ ] Implement JWT + ECDSA hybrid auth in Django
-  - Flutter presents ECDSA public key; backend verifies
-- [ ] Integrate threat graph: Neo4j data → Flutter graph widget
-- [ ] Real-time alert feed via WebSocket → Flutter `dashboard_screen.dart`
+  - JS client presents ECDSA public key; backend verifies
+- [ ] Integrate threat graph: Neo4j data → JS graph widget
+- [ ] Real-time alert feed via WebSocket → `dashboard/index.html`
 
 ---
 
@@ -411,8 +376,8 @@ ai-defence-system/
 - [ ] **Error Handling:** Return structured JSON errors from AI engine FastAPI server
 - [ ] **Demo Script:** Prepare sample deepfake video and phishing email for live demo
 - [ ] **SOC Dashboard Polish:**
-  - Dark theme with accent colors
-  - Animated threat confidence meters
+  - Dark theme with accent colors (Tailwind)
+  - Animated threat confidence meters (CSS transitions)
   - Real-time Neo4j graph updates
   - ECDSA verification badge on each verdict
 - [ ] **README:** Write setup and demo instructions

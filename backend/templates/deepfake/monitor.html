@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block header_title %}Live Deepfake Monitor{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full gap-6">
+    <div class="glass-panel rounded-xl flex-1 flex flex-col overflow-hidden">
+        <div class="p-4 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+                <i class="fa-solid fa-camera text-blue-400"></i> Video Feed Analysis
+            </h3>
+            <div class="flex gap-3">
+                <button id="btn-start" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold transition-colors">Start Camera</button>
+                <button id="btn-stop" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-semibold transition-colors hidden">Stop</button>
+            </div>
+        </div>
+        <div class="flex-1 relative bg-black flex items-center justify-center">
+            <video id="video-element" class="w-full h-full object-contain hidden" autoplay playsinline muted></video>
+            
+            <!-- Placeholder -->
+            <div id="video-placeholder" class="text-center text-slate-500">
+                <i class="fa-solid fa-video-slash text-5xl mb-4"></i>
+                <p>Camera is inactive. Click "Start Camera" to begin stream.</p>
+            </div>
+
+            <!-- Overlay canvas for drawing (Phase 3) -->
+            <canvas id="overlay-canvas" class="absolute inset-0 w-full h-full object-contain pointer-events-none"></canvas>
+
+            <!-- Verdict Badge -->
+            <div id="verdict-badge" class="absolute top-6 right-6 glass-panel px-4 py-2 rounded-full font-bold text-lg hidden items-center gap-2 shadow-xl transition-all duration-300">
+                <span id="verdict-icon"></span>
+                <span id="verdict-text"></span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // UUID generator for session
+    function uuidv4() {
+        return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+            (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
+        );
+    }
+
+    const sessionId = uuidv4();
+    let streamClient = null;
+    let localStream = null;
+    let captureInterval = null;
+
+    const videoEl = document.getElementById('video-element');
+    const placeholder = document.getElementById('video-placeholder');
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const verdictBadge = document.getElementById('verdict-badge');
+    const verdictText = document.getElementById('verdict-text');
+    const verdictIcon = document.getElementById('verdict-icon');
+
+    // Create a hidden canvas to extract JPEG frames
+    const captureCanvas = document.createElement('canvas');
+    const captureCtx = captureCanvas.getContext('2d');
+
+    btnStart.addEventListener('click', async () => {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+            videoEl.srcObject = localStream;
+            videoEl.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            btnStart.classList.add('hidden');
+            btnStop.classList.remove('hidden');
+
+            // Connect WebSocket
+            streamClient = new ThreatWSClient(`deepfake/${sessionId}/`);
+            streamClient.onMessage = (msg) => {
+                if (msg.type === 'verdict') {
+                    updateVerdict(msg);
+                }
+            };
+            streamClient.connect();
+
+            // Setup frame capture loop (e.g. 5 FPS for phase 1 testing)
+            captureInterval = setInterval(() => {
+                if(videoEl.readyState === videoEl.HAVE_ENOUGH_DATA && streamClient.isConnected) {
+                    captureCanvas.width = videoEl.videoWidth;
+                    captureCanvas.height = videoEl.videoHeight;
+                    captureCtx.drawImage(videoEl, 0, 0, captureCanvas.width, captureCanvas.height);
+                    // Get base64 JPEG
+                    const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.8);
+                    const b64 = dataUrl.split(',')[1];
+                    
+                    streamClient.send({
+                        type: "frame_chunk",
+                        frames: [b64],
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }, 200); // 5 FPS
+            
+        } catch (err) {
+            alert('Error accessing camera: ' + err.message);
+        }
+    });
+
+    btnStop.addEventListener('click', () => {
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        clearInterval(captureInterval);
+        if (streamClient) {
+            streamClient.socket.close();
+        }
+        videoEl.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        btnStop.classList.add('hidden');
+        btnStart.classList.remove('hidden');
+        verdictBadge.classList.add('hidden');
+    });
+
+    function updateVerdict(data) {
+        verdictBadge.classList.remove('hidden', 'text-green-400', 'text-red-400', 'border-green-500', 'border-red-500');
+        
+        if (data.is_deepfake) {
+            verdictBadge.classList.add('text-red-400', 'border-red-500');
+            verdictIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            verdictText.textContent = `DEEPFAKE (${(data.confidence * 100).toFixed(1)}%)`;
+        } else {
+            verdictBadge.classList.add('text-green-400', 'border-green-500');
+            verdictIcon.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+            verdictText.textContent = `REAL (${(data.confidence * 100).toFixed(1)}%)`;
+        }
+    }
+</script>
+{% endblock %}
