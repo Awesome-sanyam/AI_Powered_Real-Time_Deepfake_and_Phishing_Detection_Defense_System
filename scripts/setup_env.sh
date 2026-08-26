@@ -12,7 +12,6 @@ echo ""
 echo "🔍 Checking prerequisites..."
 command -v python3 >/dev/null || { echo "❌ python3 not found. Install from python.org"; exit 1; }
 command -v brew >/dev/null || { echo "❌ Homebrew not found. Install from brew.sh"; exit 1; }
-command -v flutter >/dev/null || { echo "⚠️  Flutter not found. Install from flutter.dev"; }
 command -v docker >/dev/null || { echo "⚠️  Docker not found. Neo4j + Redis won't auto-start"; }
 
 # ── 2. System services via Homebrew ───────────────────────────────────────────
@@ -86,14 +85,6 @@ else:
 "
 deactivate
 
-# ── 7. Flutter dependencies ────────────────────────────────────────────────────
-echo ""
-if command -v flutter >/dev/null; then
-    echo "🦋 Installing Flutter dependencies..."
-    cd "$PROJECT_ROOT/flutter_dashboard"
-    flutter pub get -q
-    echo "✅ Flutter deps installed"
-fi
 
 # ── 8. Docker services (Neo4j + Redis) ────────────────────────────────────────
 echo ""

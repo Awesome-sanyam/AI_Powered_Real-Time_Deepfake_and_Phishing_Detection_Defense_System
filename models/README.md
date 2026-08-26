@@ -25,7 +25,7 @@ No manual download required.
 | Django + Celery | ~200 MB |
 | Neo4j (Docker) | ~512 MB |
 | Redis (Docker) | ~50 MB |
-| Flutter Desktop | ~100 MB |
+
 | **Total Peak** | **~3.0 GB** |
 | M4 Available | **16 GB** |
 | **Headroom** | **~13 GB** ✅ |

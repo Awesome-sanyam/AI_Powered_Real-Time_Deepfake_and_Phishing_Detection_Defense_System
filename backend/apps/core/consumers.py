@@ -2,7 +2,7 @@
 Core App — WebSocket Consumers
 ================================
 AlertFeedConsumer: broadcasts real-time threat alerts to all connected
-Flutter SOC dashboard clients.
+Frontend SOC dashboard clients.
 
 Group "alert_feed" — any backend service can publish to this group via
 channel_layer.group_send() to push instant alerts to all dashboard tabs.
@@ -34,7 +34,7 @@ ALERT_GROUP = "alert_feed"
 
 class AlertFeedConsumer(AsyncWebsocketConsumer):
     """
-    Broadcasts real-time threat alerts to the Flutter SOC dashboard.
+    Broadcasts real-time threat alerts to the Frontend SOC dashboard clients.
 
     All connected dashboard clients subscribe to the 'alert_feed' group.
     Alerts are published by Celery tasks after AI verdict delivery.

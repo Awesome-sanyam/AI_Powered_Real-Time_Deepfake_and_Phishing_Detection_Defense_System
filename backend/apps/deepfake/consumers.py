@@ -2,7 +2,7 @@
 DeepfakeStreamConsumer
 ======================
 Accepts a binary WebSocket stream of JPEG frames + PCM audio chunks from the
-Flutter dashboard, dispatches them to the Celery AI task queue, and pushes
+Frontend JS clients, dispatches them to the Celery AI task queue, and pushes
 signed verdict JSON back to the client in real time.
 
 Message protocol (client → server):

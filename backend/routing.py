@@ -20,7 +20,7 @@ websocket_urlpatterns = [
         name="ws-deepfake-stream",
     ),
 
-    # Real-time alert broadcast feed — Flutter dashboard subscribes here
+    # Real-time alert broadcast feed — Frontend dashboard subscribes here
     re_path(
         r"^ws/alerts/$",
         core_consumers.AlertFeedConsumer.as_asgi(),

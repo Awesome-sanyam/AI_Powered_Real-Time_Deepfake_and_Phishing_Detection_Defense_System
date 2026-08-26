@@ -67,8 +67,7 @@ def detect_device() -> DeviceInfo:
     if torch.backends.mps.is_available() and torch.backends.mps.is_built():
         # Smoke-test MPS with a tiny tensor to confirm it's functional
         try:
-            _test = torch.ones(1, device="mps")
-            del _test
+            torch.ones(1, device="mps")
             device = torch.device("mps")
             logger.info("✅ MPS (Apple Metal) device ACTIVE — using Apple Silicon GPU")
             return DeviceInfo(device=device, name="mps", is_mps=True, is_cuda=False, is_cpu=False)

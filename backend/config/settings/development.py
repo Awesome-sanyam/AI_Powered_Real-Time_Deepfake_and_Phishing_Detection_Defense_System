@@ -6,7 +6,7 @@ Extends base.py with development-friendly overrides:
   - SQLite fallback if PostgreSQL is not running
   - Redis channel layer (with InMemory fallback for CI)
   - Detailed per-module logging to stdout
-  - CORS open to local Flutter dev clients
+  - CORS open to local dev clients
 
 Author: Sanyam Gehlot
 """
@@ -78,13 +78,12 @@ except Exception:
         }
     }
 
-# ── CORS — allow Flutter local dev clients ────────────────────────────────────
+# ── CORS — allow local dev clients ────────────────────────────────────────────
 CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",   # Flutter web dev server
-    "http://localhost:8080",   # Alternative Flutter port
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:8080",
 ]
 CORS_ALLOW_CREDENTIALS = True
 

@@ -349,7 +349,7 @@ ai-defence-system/
 ---
 
 ### 🔗 Phase 3 — Integration & Real-Time Streaming (Day 5)
-> **Goal:** Live end-to-end pipeline. Flutter talks to Django talks to AI.
+> **Goal:** Live end-to-end pipeline. Frontend talks to Django talks to AI.
 
 - [ ] Upgrade WebSocket consumer to accept binary frame chunks and dispatch to Celery
 - [ ] Implement server-sent verdicts back over WebSocket to Frontend
@@ -883,7 +883,7 @@ class CrossModalVerificationEngine:
 | MediaPipe RAM | Shared FaceMesh instance per engine (not per-frame init) |
 | Django + Celery + AI simultaneously | AI engine runs as separate process (FastAPI); Celery dispatches via HTTP |
 | PostgreSQL vs Neo4j | Run Neo4j in Docker (limited to 512MB heap via `NEO4J_JAVA_OPTS`) |
-| Multiple services RAM budget | Django ≈ 200MB · AI Engine ≈ 2.5GB · Neo4j ≈ 512MB · Redis ≈ 50MB · Flutter ≈ 100MB |
+| Multiple services RAM budget | Django ≈ 200MB · AI Engine ≈ 2.5GB · Neo4j ≈ 512MB · Redis ≈ 50MB |
 
 ### MPS Verification Snippet
 ```python
@@ -936,21 +936,6 @@ memory-profiler>=0.61
 pydantic>=2.7
 ```
 
-### `flutter_dashboard/pubspec.yaml` (dependencies section)
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  flutter_riverpod: ^2.5.1
-  go_router: ^14.2.0
-  dio: ^5.4.3
-  web_socket_channel: ^3.0.0
-  fl_chart: ^0.68.0
-  camera: ^0.11.0+1
-  permission_handler: ^11.3.1
-  shared_preferences: ^2.3.0
-  intl: ^0.19.0
-```
 
 ---
 
