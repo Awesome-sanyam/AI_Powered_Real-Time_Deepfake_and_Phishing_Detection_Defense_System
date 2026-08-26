@@ -16,10 +16,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractBaseUser
 
 from .models import IdentityKey
 
@@ -130,7 +126,6 @@ def verify_verdict_signature(
     try:
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import ec
-        from cryptography.exceptions import InvalidSignature
 
         public_key = serialization.load_pem_public_key(public_key_pem.encode())
         sig_bytes = bytes.fromhex(signature_hex)
