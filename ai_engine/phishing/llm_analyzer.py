@@ -53,7 +53,7 @@ class PhishingAnalyzer:
                 model_path=model_path,
                 n_ctx=int(os.environ.get("LLM_N_CTX", 512)),
                 n_threads=int(os.environ.get("LLM_N_THREADS", 4)),
-                n_gpu_layers=0,   # CPU-only for stability on MPS
+                n_gpu_layers=-1,   # Offload all layers to MPS (Apple Metal)
                 verbose=False,
             )
             logger.info("✅ GGUF LLM loaded")

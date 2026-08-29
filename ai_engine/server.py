@@ -1,17 +1,16 @@
 """
 AI Engine FastAPI Microservice
 ==============================
-Exposes HTTP endpoints consumed by the Django Celery task layer.
-Runs as an isolated process on port 8001.
-
-Start (from project root):
-    uvicorn ai_engine.server:app --host 0.0.0.0 --port 8001 --workers 1 --reload
+Phase 2 — fully wired to real AI detectors.
 
 Endpoints:
     GET  /health          → Device status + model load state
-    POST /scan/frame      → Single JPEG/PNG upload → mock artifact score (Phase 1)
-    POST /scan/deepfake   → Full cross-modal deepfake analysis (Phase 2+)
-    POST /scan/phishing   → LLM phishing analysis (Phase 2+)
+    POST /scan/frame      → Single JPEG/PNG upload → artifact score
+    POST /scan/deepfake   → Full cross-modal deepfake analysis (signed)
+    POST /scan/phishing   → LLM + heuristic phishing analysis (signed)
+
+Start (from project root):
+    uvicorn ai_engine.server:app --host 0.0.0.0 --port 8001 --workers 1
 
 Author: Sanyam Gehlot
 """
@@ -23,6 +22,7 @@ import os
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
+
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -36,10 +36,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── Startup timestamp ────────────────────────────────────────────────────────
 _STARTUP_TIME: float = time.time()
 
-# ── Singleton AI engine instances (heavy models — loaded once) ────────────────
+# ── Singleton AI engine instances (loaded once at startup) ─────────────────────
 _deepfake_engine = None
 _phishing_engine = None
 _models_loaded: bool = False
@@ -49,7 +48,7 @@ _models_loaded: bool = False
 async def lifespan(app: FastAPI):
     """
     Load AI models at startup, release resources at shutdown.
-    Phase 1: loads CrossModalVerificationEngine (may be slow — ~2 GB on MPS).
+    Gracefully degrades — server remains reachable even if models fail to load.
     """
     global _deepfake_engine, _phishing_engine, _models_loaded
 
@@ -61,16 +60,18 @@ async def lifespan(app: FastAPI):
         _deepfake_engine = CrossModalVerificationEngine(
             ecdsa_private_key_pem=os.environ.get("ECDSA_PRIVATE_KEY_PEM") or None,
         )
+        logger.info("✅ CrossModalVerificationEngine loaded")
 
         from ai_engine.phishing.llm_analyzer import PhishingAnalyzer
         _phishing_engine = PhishingAnalyzer(
             model_path=os.environ.get("GGUF_MODEL_PATH", "models/llama.gguf"),
-            ecdsa_service=_deepfake_engine.ecdsa_service,
+            ecdsa_service=_deepfake_engine.ecdsa,
         )
+        logger.info("✅ PhishingAnalyzer loaded")
         _models_loaded = True
-        logger.info("✅ All AI models loaded. Engine ready.")
+
     except Exception as exc:
-        logger.warning(f"⚠️  Model load failed (Phase 1 mode — no weights): {exc}")
+        logger.warning(f"⚠️  Model load failed (Phase 1 fallback mode): {exc}")
         _models_loaded = False
 
     yield  # ← application runs here
@@ -87,13 +88,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI Defence Engine",
-    description="Deepfake & Phishing Detection Microservice — Phase 1",
-    version="1.0.0",
+    description="Deepfake & Phishing Detection Microservice — Phase 2",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
 
-# ── Pydantic schemas ──────────────────────────────────────────────────────────
+# ── Pydantic request schemas ──────────────────────────────────────────────────
 
 class DeepfakeScanRequest(BaseModel):
     session_id: str
@@ -105,9 +106,9 @@ class DeepfakeScanRequest(BaseModel):
 
 class PhishingScanRequest(BaseModel):
     session_id: str
-    content: str
-    headers: Optional[dict] = None
-    url: Optional[str] = None
+    content: str                # Email body or any suspicious text
+    headers: Optional[dict] = None   # Email headers dict (optional)
+    url: Optional[str] = None       # Suspicious URL (optional)
 
 
 # ── GET /health ───────────────────────────────────────────────────────────────
@@ -116,11 +117,10 @@ class PhishingScanRequest(BaseModel):
 async def health() -> dict:
     """
     Returns:
-        - status: "ok" always (if server is reachable)
-        - device: active compute device name ("mps", "cuda", "cpu")
-        - mps_available: whether Apple Metal is present on this host
-        - models_loaded: whether AI engines initialised successfully
-        - uptime_seconds: seconds since server start
+        status: "ok" always (if server is reachable)
+        device: active compute device ("mps", "cuda", "cpu")
+        models_loaded: whether AI engines initialised successfully
+        uptime_seconds: seconds since server start
     """
     report = get_device_report()
     return {
@@ -133,22 +133,19 @@ async def health() -> dict:
 
 # ── POST /scan/frame ─────────────────────────────────────────────────────────
 
-@app.post("/scan/frame", summary="Single-frame artifact score (Phase 1)")
+@app.post("/scan/frame", summary="Single-frame artifact score")
 async def scan_frame(file: UploadFile = File(...)) -> dict:
     """
-    Accepts a JPEG or PNG image upload.
-    Decodes via OpenCV, preprocesses through the MPS pipeline (fp16),
-    and returns a mock artifact score.
+    Accepts a JPEG or PNG image upload. Decodes via OpenCV, preprocesses
+    through the MPS pipeline (fp16), and returns an artifact score.
 
-    In Phase 2, the preprocessed tensor is passed to VisualArtifactDetector.
-    In Phase 1, we return a structural mock to validate the pipeline end-to-end.
-
-    Returns:
-        JSON with preprocessing metadata and a mock artifact_score [0.0, 1.0].
+    Phase 1: Returns a pixel-statistics mock score (deterministic, no model).
+    Phase 2: When models are loaded, passes through VisualArtifactDetector.
     """
-    # ── Validate content type ──────────────────────────────────────────────────
     content_type = file.content_type or ""
-    if content_type not in ("image/jpeg", "image/png", "image/jpg", "application/octet-stream"):
+    if content_type not in (
+        "image/jpeg", "image/png", "image/jpg", "application/octet-stream"
+    ):
         raise HTTPException(
             status_code=415,
             detail=f"Unsupported media type '{content_type}'. Send image/jpeg or image/png.",
@@ -158,35 +155,49 @@ async def scan_frame(file: UploadFile = File(...)) -> dict:
     if not raw_bytes:
         raise HTTPException(status_code=400, detail="Empty file received.")
 
-    # ── Decode JPEG/PNG → OpenCV BGR ──────────────────────────────────────────
     frame = jpeg_bytes_to_bgr(raw_bytes)
     if frame is None:
-        raise HTTPException(status_code=422, detail="Could not decode image. Ensure it is a valid JPEG or PNG.")
+        raise HTTPException(
+            status_code=422,
+            detail="Could not decode image. Ensure it is a valid JPEG or PNG.",
+        )
 
     h, w = frame.shape[:2]
 
-    # ── Run through MPS preprocessing pipeline ────────────────────────────────
     try:
-        tensor = preprocess_frame(frame)  # [1, 3, 224, 224] float32 CPU
+        tensor = preprocess_frame(frame)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
-    # ── Phase 1 mock score (no model weights loaded yet) ─────────────────────
-    # Compute a deterministic mock score from pixel statistics so the
-    # response varies by input — useful for integration testing.
-    pixel_mean = float(frame.mean()) / 255.0
-    mock_artifact_score = round(abs(pixel_mean - 0.5) * 2.0, 4)  # [0, 1]
+    # If visual detector is available, use real inference
+    if _deepfake_engine is not None:
+        try:
+            scores = _deepfake_engine.visual.score_batch([frame])
+            artifact_score = round(float(scores[0]), 4)
+            phase = 2
+            note = "Real MPS inference via VisualArtifactDetector"
+        except Exception as exc:
+            logger.warning(f"Visual detector fallback: {exc}")
+            artifact_score = round(abs(float(frame.mean()) / 255.0 - 0.5) * 2.0, 4)
+            phase = 1
+            note = "Fallback mock score (model error)"
+    else:
+        # Phase 1 mock score from pixel statistics
+        pixel_mean = float(frame.mean()) / 255.0
+        artifact_score = round(abs(pixel_mean - 0.5) * 2.0, 4)
+        phase = 1
+        note = "Mock score — Phase 1. Real inference activates with model weights."
 
     return {
         "status": "processed",
         "device": DEVICE_NAME,
         "mps_active": IS_MPS,
         "input_shape": {"height": h, "width": w, "channels": 3},
-        "tensor_shape": list(tensor.shape),   # [1, 3, 224, 224]
+        "tensor_shape": list(tensor.shape),
         "tensor_dtype": str(tensor.dtype),
-        "artifact_score": mock_artifact_score,
-        "phase": 1,
-        "note": "Mock score — Phase 1 skeleton. Real inference activates in Phase 2 with model weights.",
+        "artifact_score": artifact_score,
+        "phase": phase,
+        "note": note,
     }
 
 
@@ -194,13 +205,27 @@ async def scan_frame(file: UploadFile = File(...)) -> dict:
 
 @app.post("/scan/deepfake", summary="Full cross-modal deepfake analysis")
 async def scan_deepfake(request: DeepfakeScanRequest) -> dict:
-    """Full deepfake analysis (Phase 2+). Returns 503 if models are not loaded."""
+    """
+    Full cross-modal deepfake analysis using all three detectors:
+      1. Visual artifact detection (MobileNetV2, MPS fp16)
+      2. Lip-sync delay (MediaPipe + Librosa cross-correlation)
+      3. Blink rate anomaly (FaceMesh EAR)
+
+    Verdict is cryptographically signed with ECDSA P-256.
+
+    Returns 503 if models are not loaded (model weights missing).
+    """
     if _deepfake_engine is None:
         raise HTTPException(
             status_code=503,
-            detail="Deepfake engine not loaded. Ensure model weights are present and Phase 2 is complete.",
+            detail=(
+                "Deepfake engine not loaded. "
+                "Ensure model weights are present and ECDSA key is configured."
+            ),
         )
+
     try:
+        # Decode frames from base64
         frames: list[np.ndarray] = []
         for b64 in request.frames_b64:
             frame = jpeg_bytes_to_bgr(base64.b64decode(b64))
@@ -208,7 +233,10 @@ async def scan_deepfake(request: DeepfakeScanRequest) -> dict:
                 frames.append(frame)
 
         if not frames:
-            raise HTTPException(status_code=400, detail="No valid frames decoded from frames_b64.")
+            raise HTTPException(
+                status_code=400,
+                detail="No valid frames decoded from frames_b64.",
+            )
 
         audio_bytes = base64.b64decode(request.audio_b64)
 
@@ -219,15 +247,28 @@ async def scan_deepfake(request: DeepfakeScanRequest) -> dict:
             fps=request.fps,
             sample_rate=request.sample_rate,
         )
+
         return {
             "session_id": verdict.session_id,
             "is_deepfake": verdict.is_deepfake,
-            "confidence": verdict.confidence,
-            "processing_time_ms": verdict.processing_time_ms,
+            "confidence": round(verdict.confidence, 4),
+            "processing_time_ms": round(verdict.processing_time_ms, 1),
+            "frame_count": len(verdict.frame_results),
             "signed_verdict": verdict.signed_verdict,
             "public_key_pem": verdict.public_key_pem,
-            "frame_count": len(verdict.frame_results),
+            "frame_results": [
+                {
+                    "frame_index": fr.frame_index,
+                    "visual_artifact_score": round(fr.visual_artifact_score, 4),
+                    "lip_sync_delay_ms": round(fr.lip_sync_delay_ms, 1),
+                    "blink_rate_bpm": round(fr.blink_rate_bpm, 1),
+                    "is_suspicious": fr.is_suspicious,
+                    "confidence": round(fr.confidence, 4),
+                }
+                for fr in verdict.frame_results
+            ],
         }
+
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
@@ -239,12 +280,26 @@ async def scan_deepfake(request: DeepfakeScanRequest) -> dict:
 
 @app.post("/scan/phishing", summary="LLM-powered phishing analysis")
 async def scan_phishing(request: PhishingScanRequest) -> dict:
-    """Phishing analysis (Phase 2+). Returns 503 if LLM model is not loaded."""
+    """
+    Multi-signal phishing analysis combining:
+      1. LLM intent classification (4-bit GGUF LLaMA via llama-cpp-python)
+      2. URL forensics (entropy, homoglyph, TLD, brand impersonation)
+      3. Email header analysis (SPF, DKIM, DMARC, Reply-To mismatch)
+
+    All signals are aggregated into a weighted confidence score.
+    Verdict is cryptographically signed with ECDSA P-256.
+
+    Returns 503 if the phishing engine is not loaded.
+    """
     if _phishing_engine is None:
         raise HTTPException(
             status_code=503,
-            detail="Phishing engine not loaded. Ensure GGUF model is present and Phase 2 is complete.",
+            detail=(
+                "Phishing engine not loaded. "
+                "Ensure GGUF model is present at GGUF_MODEL_PATH."
+            ),
         )
+
     try:
         result = _phishing_engine.analyze(
             session_id=request.session_id,
