@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T06:39:26.068442+00:00",
+  "generated_at": "2026-08-30T06:51:28.352837+00:00",
   "python": "3.14.2 (main, Dec  5 2025, 16:49:16) [Clang 17.0.0 (clang-1700.6.3.2)]",
   "results": [
     {
@@ -26,21 +26,21 @@
     {
       "component": "ECDSA Service",
       "status": "PASS",
-      "latency_ms": 1.3667919993167743,
+      "latency_ms": 5.174292004085146,
       "memory_mb": null,
-      "note": "sign=1.3ms verify=0.1ms"
+      "note": "sign=4.8ms verify=0.4ms"
     },
     {
       "component": "URL Forensics",
       "status": "PASS",
-      "latency_ms": 0.14324999938253313,
+      "latency_ms": 0.14628999633714557,
       "memory_mb": null,
       "note": "4 test cases"
     },
     {
       "component": "Header Analyzer",
       "status": "PASS",
-      "latency_ms": 0.04858399915974587,
+      "latency_ms": 0.0544179929420352,
       "memory_mb": null,
       "note": "3 cases: phishing/clean/mismatch"
     },
@@ -82,30 +82,30 @@
     {
       "component": "LLM Phishing Analyzer",
       "status": "PASS",
-      "latency_ms": 0.08462500409223139,
+      "latency_ms": 0.057541998103260994,
       "memory_mb": null,
       "note": "is_phishing=False signals=6"
     },
     {
       "component": "PostgreSQL",
-      "status": "OFFLINE",
-      "latency_ms": null,
+      "status": "PASS",
+      "latency_ms": 32.7049579937011,
       "memory_mb": null,
-      "note": "connection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection re"
+      "note": ""
     },
     {
       "component": "Redis",
-      "status": "OFFLINE",
-      "latency_ms": null,
+      "status": "PASS",
+      "latency_ms": 5.06195799971465,
       "memory_mb": null,
-      "note": "Error 61 connecting to localhost:6379. Connection refused."
+      "note": ""
     },
     {
       "component": "Neo4j",
-      "status": "OFFLINE",
-      "latency_ms": null,
+      "status": "PASS",
+      "latency_ms": 582.9186670016497,
       "memory_mb": null,
-      "note": "Cannot open connection to ConnectionProfile('bolt://localhost:7687')"
+      "note": "5.26.30"
     },
     {
       "component": "FastAPI AI Engine",
@@ -117,8 +117,8 @@
     {
       "component": "Memory Stress (No-GPU)",
       "status": "PASS",
-      "latency_ms": 0.18303135148016736,
-      "memory_mb": 146.296875,
+      "latency_ms": 0.1751146002789028,
+      "memory_mb": 148.40625,
       "note": "peak=0ms delta_mem=0.0MB"
     },
     {
@@ -130,10 +130,10 @@
     }
   ],
   "summary": {
-    "pass": 8,
+    "pass": 11,
     "fail": 0,
     "warn": 0,
     "skip": 6,
-    "offline": 4
+    "offline": 1
   }
 }
