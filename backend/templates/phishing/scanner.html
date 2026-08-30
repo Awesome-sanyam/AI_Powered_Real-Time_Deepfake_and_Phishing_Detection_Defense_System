@@ -1,45 +1,485 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block header_title %}Phishing Scanner{% endblock %}
+{% block title %}Phishing Scanner — DEFENCESYS{% endblock %}
+{% block header_title %}Email & URL Phishing Scanner{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Result card slide-in */
+    @keyframes result-in {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .result-in { animation: result-in 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+    /* Signal pill */
+    .signal-pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px; border-radius: 9999px;
+        font-size: 11px; font-family: monospace;
+        border: 1px solid;
+    }
+
+    /* Confidence fill */
+    .conf-fill { transition: width 0.7s cubic-bezier(0.22,1,0.36,1); }
+
+    /* Textarea polish */
+    textarea {
+        resize: vertical;
+        background: rgba(15,23,42,0.6);
+        border: 1px solid rgba(255,255,255,0.06);
+        color: #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        width: 100%;
+        font-family: 'Menlo', 'Monaco', monospace;
+        transition: border-color 0.2s;
+    }
+    textarea:focus { outline: none; border-color: rgba(59,130,246,0.5); }
+    textarea::placeholder { color: #475569; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-    <!-- Input Section -->
-    <div class="glass-panel rounded-xl flex flex-col h-full overflow-hidden">
-        <div class="p-4 border-b border-slate-700 bg-slate-800/50">
-            <h3 class="font-semibold text-lg flex items-center gap-2">
-                <i class="fa-solid fa-code text-blue-400"></i> Suspicious Content
-            </h3>
+<div class="flex flex-col xl:flex-row gap-5 h-full">
+
+    <!-- ── Left: Input form ──────────────────────────────────────────────────── -->
+    <div class="flex-1 flex flex-col gap-4 min-w-0">
+
+        <div class="glass-panel rounded-xl border border-white/5 p-5">
+            <h2 class="text-sm font-semibold text-slate-200 mb-1">Analyse suspicious content</h2>
+            <p class="text-xs text-slate-500 mb-5">Paste an email body, headers, or URL. The AI engine will classify intent, check SPF/DKIM, and compute URL entropy.</p>
+
+            <form id="scan-form" class="space-y-4" novalidate>
+
+                <!-- Email body -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <i class="fa-solid fa-envelope text-amber-400 mr-1"></i> Email Body
+                    </label>
+                    <textarea id="input-content"
+                              rows="8"
+                              placeholder="Paste the full email body or message text here…"
+                              required></textarea>
+                </div>
+
+                <!-- Suspicious URL -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <i class="fa-solid fa-link text-blue-400 mr-1"></i> Suspicious URL <span class="text-slate-600 normal-case font-normal">(optional)</span>
+                    </label>
+                    <input id="input-url"
+                           type="text"
+                           placeholder="https://suspicious-domain.tk/verify/account"
+                           class="w-full bg-[rgba(15,23,42,0.6)] border border-white/6 text-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors">
+                </div>
+
+                <!-- Email headers -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <i class="fa-solid fa-code text-violet-400 mr-1"></i> Email Headers <span class="text-slate-600 normal-case font-normal">(JSON, optional)</span>
+                    </label>
+                    <textarea id="input-headers"
+                              rows="4"
+                              placeholder='{"From": "PayPal <noreply@evil.com>", "Received-SPF": "fail", "Reply-To": "attacker@phish.tk"}'></textarea>
+                </div>
+
+                <!-- Submit -->
+                <div class="flex items-center gap-3 pt-1">
+                    <button id="btn-scan"
+                            type="submit"
+                            class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-colors">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        Scan for Phishing
+                    </button>
+                    <button id="btn-clear"
+                            type="button"
+                            class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm transition-colors">
+                        Clear
+                    </button>
+                    <div id="scan-spinner" class="hidden flex items-center gap-2 text-slate-500 text-xs">
+                        <i class="fa-solid fa-circle-notch spinner"></i> Analysing…
+                    </div>
+                </div>
+            </form>
         </div>
-        <div class="p-6 flex-1 flex flex-col gap-4">
-            <div>
-                <label class="block text-sm font-semibold text-slate-300 mb-2">Suspicious URL (Optional)</label>
-                <input type="text" class="w-full bg-slate-800 border border-slate-600 rounded-md p-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. http://paypal-secure.tk/login">
+
+        <!-- Sample presets -->
+        <div class="glass-panel rounded-xl border border-white/5 p-4">
+            <p class="text-xs text-slate-600 mb-3 uppercase tracking-widest font-semibold">Quick test samples</p>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="loadSample('phishing')"
+                        class="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                    <i class="fa-solid fa-fish-fins mr-1"></i> Phishing Email
+                </button>
+                <button onclick="loadSample('safe')"
+                        class="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs hover:bg-green-500/20 transition-colors">
+                    <i class="fa-solid fa-circle-check mr-1"></i> Legitimate Email
+                </button>
+                <button onclick="loadSample('url')"
+                        class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs hover:bg-amber-500/20 transition-colors">
+                    <i class="fa-solid fa-link mr-1"></i> Suspicious URL
+                </button>
             </div>
-            <div class="flex-1 flex flex-col">
-                <label class="block text-sm font-semibold text-slate-300 mb-2">Email Body or Message</label>
-                <textarea class="w-full flex-1 bg-slate-800 border border-slate-600 rounded-md p-3 text-white focus:outline-none focus:border-blue-500 resize-none" placeholder="Paste the suspicious content here..."></textarea>
-            </div>
-            <button class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md transition-colors mt-2">
-                <i class="fa-solid fa-magnifying-glass mr-2"></i> Run AI Analysis
-            </button>
         </div>
     </div>
 
-    <!-- Output Section -->
-    <div class="glass-panel rounded-xl flex flex-col h-full overflow-hidden">
-        <div class="p-4 border-b border-slate-700 bg-slate-800/50">
-            <h3 class="font-semibold text-lg flex items-center gap-2">
-                <i class="fa-solid fa-microchip text-blue-400"></i> AI Verdict
-            </h3>
+    <!-- ── Right: Results panel ──────────────────────────────────────────────── -->
+    <div class="w-full xl:w-96 flex-shrink-0 space-y-4">
+
+        <!-- Waiting state -->
+        <div id="results-placeholder" class="glass-panel rounded-xl border border-white/5 p-8 flex flex-col items-center justify-center text-center gap-3">
+            <div class="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                <i class="fa-solid fa-magnifying-glass text-slate-600 text-xl"></i>
+            </div>
+            <p class="text-sm text-slate-600">Submit content to see analysis results</p>
         </div>
-        <div class="p-6 flex-1 flex items-center justify-center text-slate-500">
-            <div class="text-center">
-                <i class="fa-solid fa-shield-halved text-5xl mb-4"></i>
-                <p>Waiting for scan input...</p>
+
+        <!-- Results (hidden until scan completes) -->
+        <div id="results-panel" class="hidden space-y-4 result-in">
+
+            <!-- Main verdict card -->
+            <div id="verdict-card" class="glass-panel rounded-xl border border-white/5 p-5">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="res-icon"
+                         class="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-question text-slate-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p id="res-verdict"   class="text-lg font-bold text-slate-400">—</p>
+                        <p id="res-risk-level" class="text-xs uppercase tracking-widest text-slate-600">—</p>
+                    </div>
+                    <div class="ml-auto text-right">
+                        <p id="res-conf-pct" class="text-2xl font-bold text-white font-mono">—</p>
+                        <p class="text-xs text-slate-500">confidence</p>
+                    </div>
+                </div>
+
+                <!-- Confidence bar -->
+                <div class="h-2 bg-slate-800 rounded-full overflow-hidden mb-4">
+                    <div id="res-conf-bar" class="h-full bg-amber-500 rounded-full conf-fill" style="width:0%"></div>
+                </div>
+
+                <!-- LLM Explanation -->
+                <div class="bg-slate-900/60 rounded-lg p-3 text-xs text-slate-400 leading-relaxed border border-white/5">
+                    <p class="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-1">LLM Intent Analysis</p>
+                    <p id="res-explanation">—</p>
+                </div>
+            </div>
+
+            <!-- Signals -->
+            <div class="glass-panel rounded-xl border border-white/5 p-5">
+                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
+                    <i class="fa-solid fa-flag text-amber-400 mr-1"></i> Detection Signals
+                </h3>
+                <div id="res-signals" class="flex flex-wrap gap-2">
+                    <span class="text-xs text-slate-600">None detected</span>
+                </div>
+            </div>
+
+            <!-- URL forensics -->
+            <div id="url-forensics-panel" class="glass-panel rounded-xl border border-white/5 p-5 hidden">
+                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
+                    <i class="fa-solid fa-link text-blue-400 mr-1"></i> URL Forensics
+                </h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">URL</span>
+                        <span id="url-val" class="text-slate-300 font-mono break-all text-right max-w-52 truncate">—</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Entropy Score</span>
+                        <span id="url-entropy" class="text-slate-300 font-mono">—</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Risk Score</span>
+                        <span id="url-risk" class="font-mono">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header validation -->
+            <div id="header-panel" class="glass-panel rounded-xl border border-white/5 p-5 hidden">
+                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
+                    <i class="fa-solid fa-shield text-violet-400 mr-1"></i> Header Validation
+                </h3>
+                <div class="space-y-2 text-xs" id="header-checks">
+                    <!-- injected by JS -->
+                </div>
+            </div>
+
+            <!-- ECDSA signature -->
+            <div id="ecdsa-card" class="glass-panel rounded-xl border border-white/5 p-5 hidden">
+                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">Verdict Signature</h3>
+                <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <i class="fa-solid fa-shield-check text-blue-400 text-base"></i>
+                    <div>
+                        <p class="text-xs font-semibold text-blue-300">ECDSA P-256 VERIFIED</p>
+                        <p id="ecdsa-sig" class="text-xs text-slate-500 font-mono mt-0.5 break-all"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session info -->
+            <div class="text-xs text-slate-700 font-mono px-1">
+                Session: <span id="res-session-id">—</span>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    'use strict';
+
+    // ── Sample data ──────────────────────────────────────────────────────────
+    const SAMPLES = {
+        phishing: {
+            content: `URGENT: Your PayPal account has been LIMITED!
+
+Dear Customer,
+
+We have detected unusual activity on your account. Your account access has been temporarily limited.
+
+To restore full access, you must verify your information IMMEDIATELY by clicking the link below:
+
+http://paypal-account-secure-verify.tk/restore/account?id=9823
+
+Failure to verify within 24 hours will result in permanent account suspension.
+
+PayPal Security Team`,
+            url: 'http://paypal-account-secure-verify.tk/restore/account',
+            headers: '{"From": "PayPal Security <noreply@paypa1-secure.com>", "Reply-To": "verify@evil-domain.tk", "Received-SPF": "fail (domain of paypa1-secure.com does not permit)", "X-Mailer": "PHPMailer 6.2.0"}',
+        },
+        safe: {
+            content: `Hi Sarah,
+
+Just following up on our meeting from Monday. I've attached the Q3 report for your review.
+Please let me know if you have any questions before Thursday's board presentation.
+
+Best regards,
+Michael Chen
+Senior Analyst, Finance`,
+            url: '',
+            headers: '{"From": "michael.chen@acmecorp.com", "DKIM-Signature": "v=1; a=rsa-sha256; d=acmecorp.com;"}',
+        },
+        url: {
+            content: 'Please verify your account by visiting the link below.',
+            url: 'http://amaz0n-secure-login.top/account/verify?session=abc123',
+            headers: '',
+        },
+    };
+
+    window.loadSample = function(type) {
+        const s = SAMPLES[type];
+        if (!s) return;
+        document.getElementById('input-content').value = s.content;
+        document.getElementById('input-url').value     = s.url;
+        document.getElementById('input-headers').value = s.headers;
+    };
+
+    // ── Form submit ──────────────────────────────────────────────────────────
+    document.getElementById('scan-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const content = document.getElementById('input-content').value.trim();
+        if (!content) {
+            document.getElementById('input-content').focus();
+            return;
+        }
+
+        const url     = document.getElementById('input-url').value.trim();
+        const rawHdr  = document.getElementById('input-headers').value.trim();
+        let headers   = null;
+        if (rawHdr) {
+            try { headers = JSON.parse(rawHdr); }
+            catch (e) { alert('Headers field must be valid JSON or empty.'); return; }
+        }
+
+        setLoading(true);
+
+        try {
+            // 1. Submit scan
+            const submitResp = await fetch('/api/phishing/scan/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                body: JSON.stringify({ content, url: url || null, headers }),
+            });
+            const submitData = await submitResp.json();
+
+            if (!submitResp.ok) {
+                throw new Error(submitData.error || 'Scan submission failed');
+            }
+
+            const sessionId = submitData.session_id;
+
+            // 2. Poll for result (max 60s)
+            const result = await pollForResult(sessionId, 60);
+            if (result) {
+                renderResults(result);
+            } else {
+                showError('Analysis timed out. Try again or check if the AI engine is running.');
+            }
+
+        } catch (err) {
+            showError(`Error: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    async function pollForResult(sessionId, maxSecs) {
+        const deadline = Date.now() + maxSecs * 1000;
+        while (Date.now() < deadline) {
+            await sleep(2000);
+            const resp = await fetch(`/api/phishing/scans/?session_id=${sessionId}`);
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            const scans = data.results || data;
+            const match = scans.find(s => s.session_id === sessionId);
+            if (match && match.is_phishing !== null) return match;
+        }
+        return null;
+    }
+
+    // ── Render results ───────────────────────────────────────────────────────
+    function renderResults(data) {
+        document.getElementById('results-placeholder').classList.add('hidden');
+        const panel = document.getElementById('results-panel');
+        panel.classList.remove('hidden');
+        panel.classList.add('result-in');
+
+        const isPhishing = data.is_phishing;
+        const conf       = parseFloat(data.confidence || 0);
+        const confPct    = Math.round(conf * 100);
+        const riskLevel  = (data.risk_level || '').toUpperCase();
+
+        // Verdict icon + label
+        const icon    = document.getElementById('res-icon');
+        const verdict = document.getElementById('res-verdict');
+        const confBar = document.getElementById('res-conf-bar');
+
+        if (isPhishing) {
+            icon.className    = 'w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center flex-shrink-0';
+            icon.innerHTML    = '<i class="fa-solid fa-fish-fins text-red-400 text-xl"></i>';
+            verdict.textContent = 'PHISHING DETECTED';
+            verdict.className = 'text-lg font-bold text-red-400';
+            confBar.className = 'h-full bg-red-500 rounded-full conf-fill';
+        } else {
+            icon.className    = 'w-12 h-12 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0';
+            icon.innerHTML    = '<i class="fa-solid fa-circle-check text-green-400 text-xl"></i>';
+            verdict.textContent = 'CLEAN / SAFE';
+            verdict.className = 'text-lg font-bold text-green-400';
+            confBar.className = 'h-full bg-green-500 rounded-full conf-fill';
+        }
+
+        document.getElementById('res-risk-level').textContent  = riskLevel || '—';
+        document.getElementById('res-conf-pct').textContent    = `${confPct}%`;
+        confBar.style.width = `${confPct}%`;
+        document.getElementById('res-explanation').textContent = data.explanation || 'No explanation provided.';
+        document.getElementById('res-session-id').textContent  = data.session_id || '—';
+
+        // Signals
+        const signalsEl = document.getElementById('res-signals');
+        const signals   = data.signals || [];
+        if (signals.length > 0) {
+            signalsEl.innerHTML = signals.map(sig => {
+                const isUrlSig = sig.startsWith('url-') || sig.startsWith('entropy');
+                const isHdrSig = sig.startsWith('spf') || sig.startsWith('dkim') || sig.startsWith('dmarc') || sig.startsWith('reply-to') || sig.startsWith('missing');
+                const colorCls = isUrlSig ? 'border-blue-500/30 bg-blue-500/5 text-blue-400'
+                               : isHdrSig ? 'border-violet-500/30 bg-violet-500/5 text-violet-400'
+                               :            'border-amber-500/30 bg-amber-500/5 text-amber-400';
+                return `<span class="signal-pill ${colorCls}"><i class="fa-solid fa-flag text-xs"></i>${sig}</span>`;
+            }).join('');
+        } else {
+            signalsEl.innerHTML = '<span class="text-xs text-slate-600">No threat signals detected</span>';
+        }
+
+        // URL panel (heuristic from signals)
+        const urlInput = document.getElementById('input-url').value.trim();
+        if (urlInput) {
+            document.getElementById('url-forensics-panel').classList.remove('hidden');
+            document.getElementById('url-val').textContent     = urlInput;
+            const entropySignal = signals.find(s => s.includes('entropy'));
+            document.getElementById('url-entropy').textContent = entropySignal ? entropySignal.split(':')[1] || '—' : '—';
+            const riskPct = isPhishing ? `${confPct}%` : '—';
+            const riskEl  = document.getElementById('url-risk');
+            riskEl.textContent = riskPct;
+            riskEl.className   = `font-mono ${isPhishing ? 'text-red-400' : 'text-green-400'}`;
+        }
+
+        // Header panel
+        const hdrInput = document.getElementById('input-headers').value.trim();
+        if (hdrInput) {
+            const hdrPanel   = document.getElementById('header-panel');
+            const hdrChecks  = document.getElementById('header-checks');
+            hdrPanel.classList.remove('hidden');
+            const checks = [
+                { label: 'SPF',          signal: 'spf-fail',              pass: !signals.includes('spf-fail') },
+                { label: 'DKIM',         signal: 'missing-dkim',          pass: !signals.includes('missing-dkim') },
+                { label: 'DMARC',        signal: 'dmarc-fail',            pass: !signals.includes('dmarc-fail') },
+                { label: 'Reply-To',     signal: 'reply-to-from-mismatch',pass: !signals.includes('reply-to-from-mismatch') },
+                { label: 'Display Name', signal: 'display-name-spoof',    pass: !signals.includes('display-name-spoof') },
+            ];
+            hdrChecks.innerHTML = checks.map(c => `
+                <div class="flex items-center justify-between py-1 border-b border-white/3 last:border-0">
+                    <span class="text-slate-500">${c.label}</span>
+                    <span class="${c.pass ? 'text-green-400' : 'text-red-400'} font-mono">
+                        <i class="fa-solid ${c.pass ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1"></i>
+                        ${c.pass ? 'PASS' : 'FAIL'}
+                    </span>
+                </div>`).join('');
+        }
+
+        // ECDSA badge
+        if (data.signed_verdict) {
+            document.getElementById('ecdsa-card').classList.remove('hidden');
+            document.getElementById('ecdsa-sig').textContent = data.signed_verdict.slice(0, 48) + '…';
+        }
+
+        // Global alert for phishing
+        if (isPhishing && typeof window.showToast === 'function') {
+            window.showToast('🎣 Phishing Detected', `Confidence ${confPct}% — ${riskLevel}`, 'phishing');
+        }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function setLoading(on) {
+        document.getElementById('btn-scan').disabled    = on;
+        document.getElementById('scan-spinner').classList.toggle('hidden', !on);
+        document.getElementById('scan-spinner').classList.toggle('flex', on);
+    }
+
+    function showError(msg) {
+        document.getElementById('results-placeholder').classList.remove('hidden');
+        document.getElementById('results-placeholder').querySelector('p').textContent = msg;
+        document.getElementById('results-panel').classList.add('hidden');
+    }
+
+    function getCsrf() {
+        const m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // Clear button
+    document.getElementById('btn-clear').addEventListener('click', () => {
+        document.getElementById('input-content').value = '';
+        document.getElementById('input-url').value     = '';
+        document.getElementById('input-headers').value = '';
+        document.getElementById('results-panel').classList.add('hidden');
+        document.getElementById('results-placeholder').classList.remove('hidden');
+        document.getElementById('results-placeholder').querySelector('p').textContent = 'Submit content to see analysis results';
+    });
+})();
+</script>
 {% endblock %}

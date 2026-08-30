@@ -1,24 +1,245 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block header_title %}Threat Graph Visualizer{% endblock %}
+{% block title %}Threat Graph — DEFENCESYS{% endblock %}
+{% block header_title %}Interactive Threat Graph{% endblock %}
+
+{% block extra_head %}
+<!-- Vis.js Network -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+<style>
+    #threat-network {
+        width: 100%;
+        height: 100%;
+        background: #0b1120;
+        border-radius: 0.75rem;
+    }
+    /* Legend dot */
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Node sidebar slide */
+    @keyframes sidebar-in {
+        from { opacity: 0; transform: translateX(16px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+    .sidebar-in { animation: sidebar-in 0.25s ease forwards; }
+
+    /* Filter button active */
+    .filter-active {
+        background: rgba(59,130,246,0.2) !important;
+        border-color: rgba(59,130,246,0.5) !important;
+        color: #60a5fa !important;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="glass-panel rounded-xl flex flex-col h-[600px] overflow-hidden">
-    <div class="p-4 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
-        <h3 class="font-semibold text-lg flex items-center gap-2">
-            <i class="fa-solid fa-project-diagram text-blue-400"></i> Campaign Topology
-        </h3>
-        <button class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-md text-sm text-white transition-colors">
-            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+<div class="flex flex-col h-full gap-4" style="min-height: calc(100vh - 5rem);">
+
+    <!-- ─── Toolbar ──────────────────────────────────────────────────────────── -->
+    <div class="glass-panel rounded-xl border border-white/5 px-4 py-3 flex flex-wrap items-center gap-3">
+
+        <!-- Filter controls -->
+        <span class="text-xs text-slate-600 uppercase tracking-widest font-semibold mr-1">Filter</span>
+
+        <button id="filter-all"
+                onclick="setFilter(null)"
+                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-300 text-xs hover:bg-slate-700 transition-colors">
+            All Nodes
         </button>
+        <button id="filter-email"
+                onclick="setFilter('email')"
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+            <i class="fa-solid fa-envelope mr-1 text-blue-400"></i>Email
+        </button>
+        <button id="filter-domain"
+                onclick="setFilter('domain')"
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+            <i class="fa-solid fa-globe mr-1 text-orange-400"></i>Domain
+        </button>
+        <button id="filter-ip"
+                onclick="setFilter('ip')"
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+            <i class="fa-solid fa-network-wired mr-1 text-red-400"></i>IP
+        </button>
+        <button id="filter-session"
+                onclick="setFilter('session')"
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+            <i class="fa-solid fa-camera mr-1 text-violet-400"></i>Session
+        </button>
+
+        <!-- Divider -->
+        <div class="w-px h-5 bg-white/5 mx-1"></div>
+
+        <!-- Actions -->
+        <button onclick="viz && viz.refresh()"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+            <i class="fa-solid fa-rotate-right text-xs"></i> Refresh
+        </button>
+
+        <!-- Node count badge -->
+        <div class="ml-auto flex items-center gap-3 text-xs text-slate-600 font-mono">
+            <span><span id="node-count" class="text-slate-400">0</span> nodes</span>
+            <span><span id="edge-count" class="text-slate-400">0</span> edges</span>
+            <span id="refresh-countdown" class="text-slate-700">↻ 30s</span>
+        </div>
     </div>
-    <div class="flex-1 bg-black relative flex items-center justify-center">
-        <!-- Placeholder for graph canvas -->
-        <div class="text-center text-slate-500">
-            <i class="fa-solid fa-network-wired text-5xl mb-4"></i>
-            <p>Graph visualization will render here (D3.js integration pending).</p>
+
+    <!-- ─── Graph + Sidebar ──────────────────────────────────────────────────── -->
+    <div class="flex flex-1 gap-4 min-h-0">
+
+        <!-- Graph canvas -->
+        <div class="flex-1 glass-panel rounded-xl border border-white/5 overflow-hidden relative min-h-0">
+            <div id="threat-network"></div>
+
+            <!-- Legend overlay -->
+            <div class="absolute bottom-4 left-4 glass-panel rounded-lg border border-white/5 p-3 space-y-2 pointer-events-none">
+                <p class="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-1">Legend</p>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-blue-600"></div><span class="text-xs text-slate-400">Email</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-orange-600"></div><span class="text-xs text-slate-400">Domain</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-red-600"></div><span class="text-xs text-slate-400">IP Address</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-violet-600"></div><span class="text-xs text-slate-400">Session</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot border-2 border-yellow-400 bg-transparent"></div><span class="text-xs text-slate-400">High Risk (>80%)</span></div>
+            </div>
+
+            <!-- Empty state (shown when no data) -->
+            <div id="graph-empty"
+                 class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none hidden">
+                <div class="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                    <i class="fa-solid fa-circle-nodes text-slate-600 text-2xl"></i>
+                </div>
+                <p class="text-sm text-slate-600">No threat nodes yet</p>
+                <p class="text-xs text-slate-700">Run deepfake or phishing scans to populate the graph</p>
+            </div>
+        </div>
+
+        <!-- Node details sidebar -->
+        <div class="w-72 flex-shrink-0 flex flex-col gap-3">
+
+            <!-- Node detail panel -->
+            <div class="glass-panel rounded-xl border border-white/5 p-4 flex-1">
+                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-blue-400 text-xs"></i>
+                    Node Details
+                </h3>
+                <div id="node-details" class="sidebar-in">
+                    <p class="text-slate-600 text-sm">Click a node to inspect</p>
+                </div>
+            </div>
+
+            <!-- Graph stats -->
+            <div class="glass-panel rounded-xl border border-white/5 p-4">
+                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
+                    <i class="fa-solid fa-chart-pie text-rose-400 text-xs mr-1"></i>
+                    Composition
+                </h3>
+                <div class="space-y-2" id="composition-stats">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Email</span>
+                        <span id="count-email"   class="text-slate-400 font-mono">0</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span> Domain</span>
+                        <span id="count-domain"  class="text-slate-400 font-mono">0</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> IP</span>
+                        <span id="count-ip"      class="text-slate-400 font-mono">0</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span> Session</span>
+                        <span id="count-session" class="text-slate-400 font-mono">0</span>
+                    </div>
+                    <div class="border-t border-white/5 pt-2 flex items-center justify-between text-xs">
+                        <span class="text-slate-600">High Risk (&gt;70%)</span>
+                        <span id="count-high-risk" class="text-red-400 font-mono">0</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/graph_visualizer.js' %}"></script>
+<script>
+(function() {
+    'use strict';
+
+    let viz = null;
+    let currentFilter = null;
+    let countdownVal  = 30;
+    let countdownTimer = null;
+
+    // ── Boot visualiser ───────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+        viz = new ThreatGraphVisualizer({
+            container:  document.getElementById('threat-network'),
+            sidebarEl:  document.getElementById('node-details'),
+            dataUrl:    '/api/graph/data/',
+            refreshMs:  30000,
+        });
+
+        // Override fetch to update counters
+        const _origFetch = viz._fetchAndRender.bind(viz);
+        viz._fetchAndRender = async function() {
+            await _origFetch();
+            updateCounters();
+            resetCountdown();
+        };
+
+        await viz.init();
+        updateCounters();
+        startCountdown();
+    });
+
+    // ── Filter logic ──────────────────────────────────────────────────────────
+    window.setFilter = function(type) {
+        currentFilter = type;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('filter-active');
+        });
+        const activeId = type ? `filter-${type}` : 'filter-all';
+        document.getElementById(activeId).classList.add('filter-active');
+
+        if (type) viz.setFilter(type);
+        else viz.clearFilter();
+    };
+
+    // ── Counter update ────────────────────────────────────────────────────────
+    function updateCounters() {
+        const allNodes = viz._allNodes || [];
+        const allEdges = viz._allEdges || [];
+
+        document.getElementById('node-count').textContent = allNodes.length;
+        document.getElementById('edge-count').textContent = allEdges.length;
+
+        const types = ['email', 'domain', 'ip', 'session'];
+        types.forEach(t => {
+            const count = allNodes.filter(n => (n.node_type || '').toLowerCase() === t).length;
+            const el = document.getElementById(`count-${t}`);
+            if (el) el.textContent = count;
+        });
+
+        const highRisk = allNodes.filter(n => parseFloat(n.risk_score || 0) >= 0.7).length;
+        document.getElementById('count-high-risk').textContent = highRisk;
+
+        // Empty state
+        const emptyEl = document.getElementById('graph-empty');
+        emptyEl.classList.toggle('hidden', allNodes.length > 0);
+    }
+
+    // ── Countdown display ─────────────────────────────────────────────────────
+    function startCountdown() {
+        countdownTimer = setInterval(() => {
+            countdownVal--;
+            if (countdownVal <= 0) countdownVal = 30;
+            document.getElementById('refresh-countdown').textContent = `↻ ${countdownVal}s`;
+        }, 1000);
+    }
+    function resetCountdown() { countdownVal = 30; }
+
+})();
+</script>
 {% endblock %}
