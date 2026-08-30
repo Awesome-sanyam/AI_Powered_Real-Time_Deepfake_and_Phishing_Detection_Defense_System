@@ -70,9 +70,9 @@ TEMPLATES = [
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "defence_db"),
-        "USER": os.environ.get("POSTGRES_USER", "defence_user"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "defence_password"),
+        "NAME": os.environ.get("POSTGRES_DB", "soc_db"),
+        "USER": os.environ.get("POSTGRES_USER", "soc_user"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "soc_password"),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
@@ -122,3 +122,8 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ── Authentication redirects ────────────────────────────────────────────────────────
+LOGIN_URL = "/auth/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/auth/login/"

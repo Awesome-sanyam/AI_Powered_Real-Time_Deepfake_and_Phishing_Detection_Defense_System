@@ -1,80 +1,141 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<!--
+  Theme Strategy: Tailwind `class` dark mode.
+  The inline script below runs before the body renders to apply/remove
+  the `dark` class on <html>, preventing any flash of wrong theme.
+-->
+<html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="AI-Powered Real-Time Deepfake and Phishing Detection Defence System — Security Operations Centre">
     <title>{% block title %}DEFENCESYS — SOC Dashboard{% endblock %}</title>
 
-    <!-- Tailwind CSS via CDN -->
+    <!-- Tailwind CSS with dark-mode class strategy -->
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
+    <!-- ── Theme init: runs BEFORE body renders to prevent flash ─────────────── -->
+    <script>
+    (function() {
+        const stored = localStorage.getItem('soc-theme');
+        // Default to dark (SOC aesthetic) if nothing stored
+        if (stored === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    })();
+    </script>
+
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        /* ── CSS Custom Properties — Light & Dark ─────────────────────── */
         :root {
-            --color-bg:        #0b1120;
-            --color-surface:   #111827;
-            --color-border:    rgba(255,255,255,0.08);
-            --color-accent:    #3b82f6;
-            --color-danger:    #ef4444;
-            --color-warning:   #f59e0b;
-            --color-success:   #22c55e;
+            --color-bg:       #f8fafc;
+            --color-surface:  #ffffff;
+            --color-border:   #e2e8f0;
+            --color-text:     #0f172a;
+            --color-muted:    #64748b;
+            --color-accent:   #3b82f6;
+            --color-danger:   #ef4444;
+            --color-warning:  #f59e0b;
+            --color-success:  #22c55e;
+            --scrollbar-bg:   #f1f5f9;
+            --scrollbar-thumb:#cbd5e1;
+        }
+        .dark {
+            --color-bg:       #0b1120;
+            --color-surface:  #111827;
+            --color-border:   rgba(255,255,255,0.07);
+            --color-text:     #f1f5f9;
+            --color-muted:    #64748b;
+            --scrollbar-bg:   #0b1120;
+            --scrollbar-thumb:#334155;
         }
 
         * { box-sizing: border-box; }
 
         body {
             background: var(--color-bg);
-            color: #f1f5f9;
+            color: var(--color-text);
             font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
+            transition: background 0.2s, color 0.2s;
         }
 
+        /* ── Glass panel — adapts to theme ───────────────────────────── */
         .glass-panel {
-            background: rgba(17, 24, 39, 0.80);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .dark .glass-panel {
+            background: rgba(17,24,39,0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--color-border);
         }
 
-        /* Sidebar nav active glow */
+        /* ── Nav active highlight ─────────────────────────────────────── */
         .nav-active {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
+            background: rgba(59,130,246,0.10);
+            color: #3b82f6;
             border-left: 3px solid #3b82f6;
         }
-
-        /* Animated status dot */
-        @keyframes pulse-ring {
-            0%   { box-shadow: 0 0 0 0    rgba(34,197,94,0.6); }
-            70%  { box-shadow: 0 0 0 8px  rgba(34,197,94,0); }
-            100% { box-shadow: 0 0 0 0    rgba(34,197,94,0); }
+        .dark .nav-active {
+            background: rgba(59,130,246,0.15);
+            color: #60a5fa;
         }
-        .dot-online  { background: var(--color-success); animation: pulse-ring 2s infinite; }
-        .dot-offline { background: var(--color-danger); }
+
+        /* ── Animated status dot ──────────────────────────────────────── */
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0   rgba(34,197,94,0.6); }
+            70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0);   }
+            100% { box-shadow: 0 0 0 0   rgba(34,197,94,0);   }
+        }
+        .dot-online       { background: var(--color-success); animation: pulse-ring 2s infinite; }
+        .dot-offline      { background: var(--color-danger);  }
         .dot-reconnecting { background: var(--color-warning); }
 
-        /* Toast slide-in */
+        /* ── Toast slide-in ───────────────────────────────────────────── */
         @keyframes slide-in {
             from { transform: translateX(120%); opacity: 0; }
             to   { transform: translateX(0);    opacity: 1; }
         }
         .toast-enter { animation: slide-in 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
 
-        /* Metric card hover */
-        .metric-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+        /* ── Metric card ──────────────────────────────────────────────── */
+        .metric-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .metric-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
         }
+        .dark .metric-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.45); }
 
-        /* Scrollbar */
+        /* ── Scrollbar ────────────────────────────────────────────────── */
         ::-webkit-scrollbar       { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #0b1120; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+        /* ── Theme toggle button ──────────────────────────────────────── */
+        #theme-toggle {
+            transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #theme-toggle:hover { transform: rotate(20deg) scale(1.15); }
+
+        /* ── Sidebar text adapts to light ─────────────────────────────── */
+        .nav-link {
+            color: var(--color-muted);
+            transition: color 0.15s, background 0.15s;
+        }
+        .nav-link:hover { color: var(--color-text); background: rgba(0,0,0,0.04); }
+        .dark .nav-link:hover { background: rgba(255,255,255,0.05); }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -82,64 +143,63 @@
 <body class="h-screen flex overflow-hidden">
 
     <!-- ═══════════════════════════════════════════════════════════════ SIDEBAR -->
-    <aside class="w-64 glass-panel flex flex-col h-full border-r border-white/5 flex-shrink-0">
+    <aside class="w-64 glass-panel flex flex-col h-full flex-shrink-0" style="border-right:1px solid var(--color-border);">
 
         <!-- Logo -->
-        <div class="px-6 py-5 border-b border-white/5 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-                <i class="fa-solid fa-shield-halved text-blue-400 text-base"></i>
+        <div class="px-6 py-5 flex items-center gap-3" style="border-bottom:1px solid var(--color-border);">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.25);">
+                <i class="fa-solid fa-shield-halved text-blue-500 text-base"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold tracking-widest text-white">DEFENCE<span class="text-blue-400">SYS</span></h1>
-                <p class="text-xs text-slate-500">AI Security Platform</p>
+                <h1 class="text-sm font-bold tracking-widest" style="color:var(--color-text);">DEFENCE<span class="text-blue-500">SYS</span></h1>
+                <p class="text-xs" style="color:var(--color-muted);">AI Security Platform</p>
             </div>
         </div>
 
         <!-- Navigation -->
         <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
-            <p class="px-3 pt-4 pb-2 text-xs font-semibold text-slate-600 uppercase tracking-widest">Operations</p>
+            <p class="px-3 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest" style="color:var(--color-muted); opacity:0.7;">Operations</p>
 
             <a href="{% url 'dashboard:index' %}"
-               id="nav-dashboard"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all text-slate-300 hover:text-white text-sm
+               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                       {% if request.resolver_match.app_name == 'dashboard' %}nav-active{% endif %}">
-                <i class="fa-solid fa-chart-line w-4 text-center text-blue-400"></i>
+                <i class="fa-solid fa-chart-line w-4 text-center text-blue-500"></i>
                 <span>SOC Overview</span>
             </a>
 
             <a href="{% url 'deepfake:monitor' %}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all text-slate-300 hover:text-white text-sm
+               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                       {% if request.resolver_match.app_name == 'deepfake' %}nav-active{% endif %}">
-                <i class="fa-solid fa-video w-4 text-center text-violet-400"></i>
+                <i class="fa-solid fa-video w-4 text-center text-violet-500"></i>
                 <span>Deepfake Monitor</span>
             </a>
 
             <a href="{% url 'phishing:scanner' %}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all text-slate-300 hover:text-white text-sm
+               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                       {% if request.resolver_match.app_name == 'phishing' %}nav-active{% endif %}">
-                <i class="fa-solid fa-envelope-open-text w-4 text-center text-amber-400"></i>
+                <i class="fa-solid fa-envelope-open-text w-4 text-center text-amber-500"></i>
                 <span>Phishing Scanner</span>
             </a>
 
             <a href="{% url 'threat_graph:view' %}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all text-slate-300 hover:text-white text-sm
+               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                       {% if request.resolver_match.app_name == 'threat_graph' %}nav-active{% endif %}">
-                <i class="fa-solid fa-circle-nodes w-4 text-center text-rose-400"></i>
+                <i class="fa-solid fa-circle-nodes w-4 text-center text-rose-500"></i>
                 <span>Threat Graph</span>
             </a>
         </nav>
 
         <!-- Footer status -->
-        <div class="p-4 border-t border-white/5 space-y-3">
+        <div class="p-4 space-y-3" style="border-top:1px solid var(--color-border);">
             <!-- Live WS status -->
             <div class="flex items-center gap-2.5 px-2">
                 <div id="ws-status-dot" class="w-2 h-2 rounded-full dot-offline flex-shrink-0"></div>
-                <span id="ws-status-text" class="text-xs text-slate-500">Connecting…</span>
+                <span id="ws-status-text" class="text-xs" style="color:var(--color-muted);">Connecting…</span>
             </div>
             <!-- AI engine status -->
             <div id="ai-engine-status" class="flex items-center gap-2.5 px-2">
-                <div class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></div>
-                <span class="text-xs text-slate-600">AI Engine</span>
+                <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-muted); opacity:0.4;"></div>
+                <span class="text-xs" style="color:var(--color-muted);">AI Engine</span>
             </div>
         </div>
     </aside>
@@ -148,14 +208,58 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
 
         <!-- Top bar -->
-        <header class="h-14 glass-panel border-b border-white/5 flex items-center justify-between px-6 z-10 flex-shrink-0">
-            <h2 class="text-base font-semibold text-slate-200">{% block header_title %}Overview{% endblock %}</h2>
-            <div class="flex items-center gap-3">
-                <span id="topbar-time" class="text-xs text-slate-500 font-mono hidden sm:block"></span>
-                <button id="alert-bell" class="relative p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5">
+        <header class="h-14 glass-panel flex items-center justify-between px-6 z-10 flex-shrink-0"
+                style="border-bottom:1px solid var(--color-border);">
+            <h2 class="text-base font-semibold" style="color:var(--color-text);">{% block header_title %}Overview{% endblock %}</h2>
+
+            <div class="flex items-center gap-2">
+                <!-- Live clock -->
+                <span id="topbar-time" class="text-xs font-mono hidden sm:block" style="color:var(--color-muted);"></span>
+
+                <!-- MPS status pill -->
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                      style="background:rgba(59,130,246,0.08); color:#3b82f6; border:1px solid rgba(59,130,246,0.2);">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>
+                    MPS Active
+                </span>
+
+                <!-- Alert bell -->
+                <button id="alert-bell" class="relative p-2 rounded-lg transition-colors"
+                        style="color:var(--color-muted);"
+                        onmouseover="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--color-text')"
+                        onmouseout="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--color-muted')">
                     <i class="fa-solid fa-bell text-sm"></i>
                     <span id="alert-badge" class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full hidden"></span>
                 </button>
+
+                <!-- Theme toggle (Sun = light, Moon = dark) -->
+                <button id="theme-toggle"
+                        onclick="toggleTheme()"
+                        class="p-2 rounded-lg transition-colors"
+                        title="Toggle Light / Dark mode"
+                        style="color:var(--color-muted);"
+                        aria-label="Toggle theme">
+                    <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+                </button>
+
+                <!-- User badge + logout -->
+                {% if user.is_authenticated %}
+                <div class="flex items-center gap-2 pl-2" style="border-left:1px solid var(--color-border);">
+                    <div class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <span class="text-xs font-medium hidden md:block" style="color:var(--color-text);">{{ user.username }}</span>
+                    <form method="POST" action="{% url 'auth:logout' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="p-1 rounded transition-colors text-xs"
+                                style="color:var(--color-muted);" title="Sign out"
+                                onmouseover="this.style.color='#ef4444'"
+                                onmouseout="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--color-muted')">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
             </div>
         </header>
 
@@ -172,9 +276,32 @@
     <script src="{% static 'js/ws_client.js' %}"></script>
 
     <script>
+    // ── Theme toggle ──────────────────────────────────────────────────────────
+    function toggleTheme() {
+        const html = document.documentElement;
+        const isDark = html.classList.contains('dark');
+        if (isDark) {
+            html.classList.remove('dark');
+            localStorage.setItem('soc-theme', 'light');
+            document.getElementById('theme-icon').className = 'fa-solid fa-sun text-sm';
+        } else {
+            html.classList.add('dark');
+            localStorage.setItem('soc-theme', 'dark');
+            document.getElementById('theme-icon').className = 'fa-solid fa-moon text-sm';
+        }
+    }
+
+    // ── Set correct icon on load ──────────────────────────────────────────────
+    (function() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const icon   = document.getElementById('theme-icon');
+        if (icon) icon.className = isDark ? 'fa-solid fa-moon text-sm' : 'fa-solid fa-sun text-sm';
+    })();
+
     // ── Topbar clock ──────────────────────────────────────────────────────────
     (function() {
         const el = document.getElementById('topbar-time');
+        if (!el) return;
         const tick = () => { el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
         tick(); setInterval(tick, 1000);
     })();
@@ -186,9 +313,19 @@
 
         function setWsDot(status) {
             dot.className = 'w-2 h-2 rounded-full flex-shrink-0';
-            if (status === 'connected')    { dot.classList.add('dot-online');        text.textContent = 'Alert feed live'; text.className = 'text-xs text-green-500'; }
-            else if (status === 'reconnecting') { dot.classList.add('dot-reconnecting'); text.textContent = 'Reconnecting…';  text.className = 'text-xs text-amber-400'; }
-            else                           { dot.classList.add('dot-offline');       text.textContent = 'Disconnected';   text.className = 'text-xs text-slate-500'; }
+            if (status === 'connected') {
+                dot.classList.add('dot-online');
+                text.textContent = 'Alert feed live';
+                text.style.color = '#22c55e';
+            } else if (status === 'reconnecting') {
+                dot.classList.add('dot-reconnecting');
+                text.textContent = 'Reconnecting…';
+                text.style.color = '#f59e0b';
+            } else {
+                dot.classList.add('dot-offline');
+                text.textContent = 'Disconnected';
+                text.style.color = '';
+            }
         }
 
         window.alertClient = new SOCWebSocketClient('alerts/');
@@ -199,15 +336,16 @@
         };
         window.alertClient.connect();
 
-        // Probe AI engine health
+        // Probe Neo4j / AI engine health
         fetch('/api/graph/health/')
             .then(r => r.json())
             .then(d => {
                 const el = document.getElementById('ai-engine-status');
+                if (!el) return;
                 if (d.status === 'ok') {
-                    el.innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div><span class="text-xs text-green-500">AI Engine online</span>';
+                    el.innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div><span class="text-xs text-green-600 dark:text-green-400">AI Engine online</span>';
                 } else {
-                    el.innerHTML = '<div class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div><span class="text-xs text-amber-500">AI Engine offline</span>';
+                    el.innerHTML = '<div class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div><span class="text-xs text-amber-600 dark:text-amber-400">AI Engine offline</span>';
                 }
             })
             .catch(() => {});
@@ -216,26 +354,27 @@
     // ── Toast helper ──────────────────────────────────────────────────────────
     function showToast(title, message, type) {
         const container = document.getElementById('toast-container');
-
-        let border = 'border-blue-500/40';
-        let icon   = 'fa-circle-info text-blue-400';
-        if (type === 'deepfake' || type === 'phishing') {
-            border = 'border-red-500/40'; icon = 'fa-triangle-exclamation text-red-400';
-        } else if (type === 'identity') {
-            border = 'border-amber-500/40'; icon = 'fa-key text-amber-400';
-        }
+        const typeMap = {
+            deepfake: ['border-red-500',    'fa-triangle-exclamation', '#ef4444'],
+            phishing: ['border-amber-500',  'fa-fish-fins',             '#f59e0b'],
+            identity: ['border-violet-500', 'fa-key',                   '#8b5cf6'],
+            info:     ['border-blue-500',   'fa-circle-info',            '#3b82f6'],
+        };
+        const [borderColor, iconClass, iconColor] = typeMap[type] || typeMap.info;
 
         const toast = document.createElement('div');
-        toast.className = `glass-panel rounded-lg border-l-4 ${border} p-3.5 pointer-events-auto shadow-2xl toast-enter`;
+        toast.className = `glass-panel rounded-lg border-l-4 p-3.5 pointer-events-auto shadow-xl toast-enter`;
+        toast.style.borderLeftColor = iconColor;
         toast.innerHTML = `
             <div class="flex gap-3 items-start">
-                <i class="fa-solid ${icon} mt-0.5 flex-shrink-0"></i>
+                <i class="fa-solid ${iconClass} mt-0.5 flex-shrink-0" style="color:${iconColor};"></i>
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-slate-100 leading-tight">${title}</p>
-                    <p class="text-xs text-slate-400 mt-0.5 break-words">${message}</p>
+                    <p class="text-sm font-semibold leading-tight" style="color:var(--color-text);">${title}</p>
+                    <p class="text-xs mt-0.5 break-words" style="color:var(--color-muted);">${message}</p>
                 </div>
-                <button onclick="this.closest('div.glass-panel').remove()" class="text-slate-600 hover:text-slate-300 ml-auto flex-shrink-0">
-                    <i class="fa-solid fa-xmark text-xs"></i>
+                <button onclick="this.closest('div.glass-panel').remove()"
+                        class="ml-auto flex-shrink-0 text-xs" style="color:var(--color-muted);">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>`;
 
@@ -247,7 +386,6 @@
         }, 6000);
     }
 
-    // Make showToast globally accessible for templates
     window.showToast = showToast;
     </script>
 

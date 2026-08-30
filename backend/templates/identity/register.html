@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — DEFENCESYS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        :root {
+            --bg:      #f8fafc;
+            --surface: #ffffff;
+            --border:  #e2e8f0;
+            --accent:  #3b82f6;
+            --text:    #0f172a;
+            --muted:   #64748b;
+        }
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .card-enter { animation: slide-up 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .input-field {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: 1.5px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text);
+            background: var(--surface);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            outline: none;
+        }
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+        }
+        .input-field.error-field {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+        }
+        .field-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+        .btn-primary {
+            width: 100%;
+            padding: 0.625rem;
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+        }
+        .btn-primary:hover  { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+        .btn-primary:active { transform: scale(0.98); }
+        .pw-strength-bar { height: 3px; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+    </style>
+</head>
+<body style="background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;">
+
+    <div class="card-enter w-full" style="max-width:420px;">
+
+        <!-- Logo -->
+        <div style="text-align:center; margin-bottom:2rem;">
+            <div style="display:inline-flex; align-items:center; justify-content:center; width:3rem; height:3rem; background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:0.75rem; margin-bottom:0.75rem;">
+                <i class="fa-solid fa-shield-halved" style="color:#3b82f6; font-size:1.25rem;"></i>
+            </div>
+            <h1 style="font-size:1.125rem; font-weight:700; letter-spacing:-0.01em;">DEFENCE<span style="color:#3b82f6;">SYS</span></h1>
+            <p style="font-size:0.8rem; color:var(--muted); margin-top:0.25rem;">Create your SOC analyst account</p>
+        </div>
+
+        <!-- Card -->
+        <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:1rem; padding:2rem; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+            <h2 style="font-size:1.125rem; font-weight:600; margin-bottom:0.375rem;">Create Account</h2>
+            <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1.5rem;">
+                An ECDSA P-256 identity key will be generated automatically on registration.
+            </p>
+
+            {% if error %}
+            <div style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
+                <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form id="register-form" method="POST" action="{% url 'auth:register' %}" novalidate>
+                {% csrf_token %}
+
+                <div style="margin-bottom:1rem;">
+                    <label for="username" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Username</label>
+                    <input id="username" name="username" type="text" autocomplete="username"
+                           class="input-field" placeholder="min. 3 characters" required minlength="3">
+                    <p class="field-hint">Your unique SOC analyst handle.</p>
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <label for="email" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Email <span style="color:var(--muted); font-weight:400;">(optional)</span></label>
+                    <input id="email" name="email" type="email" autocomplete="email"
+                           class="input-field" placeholder="analyst@soc.local">
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <label for="password" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Password</label>
+                    <input id="password" name="password" type="password" autocomplete="new-password"
+                           class="input-field" placeholder="min. 8 characters" required minlength="8"
+                           oninput="updateStrength(this.value)">
+                    <!-- Strength bar -->
+                    <div style="background:#f1f5f9; border-radius:2px; margin-top:0.5rem; overflow:hidden;">
+                        <div id="pw-strength-bar" class="pw-strength-bar" style="width:0%; background:#ef4444;"></div>
+                    </div>
+                    <p id="pw-strength-label" class="field-hint"></p>
+                </div>
+
+                <div style="margin-bottom:1.5rem;">
+                    <label for="password_confirm" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Confirm Password</label>
+                    <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password"
+                           class="input-field" placeholder="Repeat your password" required
+                           oninput="checkMatch()">
+                    <p id="pw-match-hint" class="field-hint"></p>
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn-primary">
+                    <i class="fa-solid fa-key" style="margin-right:0.375rem;"></i>
+                    Create Account & Generate ECDSA Key
+                </button>
+            </form>
+
+            <!-- ECDSA info blurb -->
+            <div style="margin-top:1.25rem; padding:0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.5rem; font-size:0.75rem; color:var(--muted); display:flex; gap:0.5rem;">
+                <i class="fa-solid fa-circle-info flex-shrink-0" style="color:#3b82f6; margin-top:1px;"></i>
+                <span>Your <strong style="color:#0f172a;">ECDSA P-256</strong> keypair is generated server-side. The public key is stored; your session provides signing authority. All AI verdicts are cryptographically signed.</span>
+            </div>
+        </div>
+
+        <p style="text-align:center; font-size:0.8rem; color:var(--muted); margin-top:1.25rem;">
+            Already have an account?
+            <a href="{% url 'auth:login' %}" style="color:#3b82f6; font-weight:500; text-decoration:none;">Sign in</a>
+        </p>
+    </div>
+
+    <script>
+    function updateStrength(pw) {
+        const bar = document.getElementById('pw-strength-bar');
+        const lbl = document.getElementById('pw-strength-label');
+        let score = 0;
+        if (pw.length >= 8)  score++;
+        if (pw.length >= 12) score++;
+        if (/[A-Z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+        const levels = [
+            [0,   '#ef4444', ''],
+            [20,  '#ef4444', 'Too short'],
+            [40,  '#f59e0b', 'Weak'],
+            [60,  '#f59e0b', 'Fair'],
+            [80,  '#22c55e', 'Strong'],
+            [100, '#16a34a', 'Very strong'],
+        ];
+        const [pct, color, label] = levels[score];
+        bar.style.width      = `${pct}%`;
+        bar.style.background = color;
+        lbl.textContent      = label;
+        lbl.style.color      = color;
+    }
+
+    function checkMatch() {
+        const pw  = document.getElementById('password').value;
+        const cnf = document.getElementById('password_confirm').value;
+        const hint = document.getElementById('pw-match-hint');
+        const btn  = document.getElementById('submit-btn');
+        if (!cnf) { hint.textContent = ''; return; }
+        if (pw === cnf) {
+            hint.textContent = '✓ Passwords match';
+            hint.style.color = '#22c55e';
+            btn.disabled = false;
+        } else {
+            hint.textContent = '✗ Passwords do not match';
+            hint.style.color = '#ef4444';
+        }
+    }
+    </script>
+</body>
+</html>

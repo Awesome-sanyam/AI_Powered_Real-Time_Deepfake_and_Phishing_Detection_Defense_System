@@ -1,6 +1,12 @@
 """Threat graph views."""
+from __future__ import annotations
+
 import logging
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.utils.decorators import method_decorator
+from django.views import View
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +16,37 @@ from .serializers import ThreatNodeSerializer
 from .graph_client import health_check, query_high_risk_nodes, _get_graph
 
 logger = logging.getLogger(__name__)
+
+
+# ── HTML View ──────────────────────────────────────────────────────────────────
+
+@method_decorator(login_required, name="dispatch")
+class ThreatGraphPageView(View):
+    """GET /threat-graph/view/ — Interactive Vis.js threat graph page."""
+
+    template_name = "threat_graph/view.html"
+
+    def get(self, request):
+        # Quick node count from Neo4j (best-effort — falls back to 0)
+        node_count = 0
+        edge_count = 0
+        graph = _get_graph()
+        if graph is not None:
+            try:
+                node_count = graph.evaluate("MATCH (n) RETURN count(n)") or 0
+                edge_count = graph.evaluate("MATCH ()-[r]->() RETURN count(r)") or 0
+            except Exception as exc:
+                logger.warning("ThreatGraphPageView Neo4j count error: %s", exc)
+
+        high_risk_nodes = ThreatNode.objects.filter(risk_score__gte=0.7).count()
+
+        return render(request, self.template_name, {
+            "node_count":      node_count,
+            "edge_count":      edge_count,
+            "high_risk_nodes": high_risk_nodes,
+        })
+
+
 
 
 class ThreatNodeListView(generics.ListAPIView):
