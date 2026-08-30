@@ -3,12 +3,18 @@ ASGI config — Django Channels WebSocket entry point.
 """
 import os
 from django.core.asgi import get_asgi_application
+from django.conf import settings
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.development")
 
 django_asgi_app = get_asgi_application()
+
+if settings.DEBUG:
+    from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
+    django_asgi_app = ASGIStaticFilesHandler(django_asgi_app)
+
 
 from routing import websocket_urlpatterns  # noqa: E402
 
