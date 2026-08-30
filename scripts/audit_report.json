@@ -1,0 +1,139 @@
+{
+  "generated_at": "2026-08-30T06:39:26.068442+00:00",
+  "python": "3.14.2 (main, Dec  5 2025, 16:49:16) [Clang 17.0.0 (clang-1700.6.3.2)]",
+  "results": [
+    {
+      "component": "Python Environment",
+      "status": "PASS",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "missing ai_engine: ['torch', 'torchvision', 'cv2', 'mediapipe', 'librosa', 'numpy', 'soundfile', 'fastapi', 'uvicorn', 'pydantic']; optional absent: ['llama_cpp']"
+    },
+    {
+      "component": "Static Imports",
+      "status": "PASS",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": ""
+    },
+    {
+      "component": "MPS Hardware",
+      "status": "SKIP",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "torch not installed"
+    },
+    {
+      "component": "ECDSA Service",
+      "status": "PASS",
+      "latency_ms": 1.3667919993167743,
+      "memory_mb": null,
+      "note": "sign=1.3ms verify=0.1ms"
+    },
+    {
+      "component": "URL Forensics",
+      "status": "PASS",
+      "latency_ms": 0.14324999938253313,
+      "memory_mb": null,
+      "note": "4 test cases"
+    },
+    {
+      "component": "Header Analyzer",
+      "status": "PASS",
+      "latency_ms": 0.04858399915974587,
+      "memory_mb": null,
+      "note": "3 cases: phishing/clean/mismatch"
+    },
+    {
+      "component": "Visual Detector",
+      "status": "SKIP",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "torch not installed"
+    },
+    {
+      "component": "Audio Analyzer",
+      "status": "SKIP",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "torch not installed"
+    },
+    {
+      "component": "LipSync Verifier",
+      "status": "SKIP",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "torch not installed"
+    },
+    {
+      "component": "Blink Detector",
+      "status": "SKIP",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "torch not installed"
+    },
+    {
+      "component": "CrossModal Engine",
+      "status": "SKIP",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "torch not installed"
+    },
+    {
+      "component": "LLM Phishing Analyzer",
+      "status": "PASS",
+      "latency_ms": 0.08462500409223139,
+      "memory_mb": null,
+      "note": "is_phishing=False signals=6"
+    },
+    {
+      "component": "PostgreSQL",
+      "status": "OFFLINE",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "connection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection re"
+    },
+    {
+      "component": "Redis",
+      "status": "OFFLINE",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "Error 61 connecting to localhost:6379. Connection refused."
+    },
+    {
+      "component": "Neo4j",
+      "status": "OFFLINE",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "Cannot open connection to ConnectionProfile('bolt://localhost:7687')"
+    },
+    {
+      "component": "FastAPI AI Engine",
+      "status": "OFFLINE",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "[Errno 61] Connection refused"
+    },
+    {
+      "component": "Memory Stress (No-GPU)",
+      "status": "PASS",
+      "latency_ms": 0.18303135148016736,
+      "memory_mb": 146.296875,
+      "note": "peak=0ms delta_mem=0.0MB"
+    },
+    {
+      "component": "Django Config",
+      "status": "PASS",
+      "latency_ms": null,
+      "memory_mb": null,
+      "note": "settings + URL resolution OK"
+    }
+  ],
+  "summary": {
+    "pass": 8,
+    "fail": 0,
+    "warn": 0,
+    "skip": 6,
+    "offline": 4
+  }
+}

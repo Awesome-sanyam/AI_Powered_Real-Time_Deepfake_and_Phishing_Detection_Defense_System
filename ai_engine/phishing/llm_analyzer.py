@@ -40,7 +40,7 @@ Analyse the following content and respond with a JSON object ONLY (no markdown) 
 class PhishingAnalyzer:
     def __init__(
         self,
-        model_path: str,
+        model_path: str = "",
         ecdsa_service: Optional[ECDSAService] = None,
     ) -> None:
         self.url_forensics = URLForensics()
