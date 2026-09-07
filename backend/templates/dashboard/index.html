@@ -25,7 +25,7 @@
 <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
 
     <!-- Total Scans -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-white/5">
+    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
         <div class="flex items-start justify-between mb-3">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2);">
                 <i class="fa-solid fa-spinner fa-spin text-blue-500 text-sm"></i>
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Deepfakes Flagged -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-white/5">
+    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
         <div class="flex items-start justify-between mb-3">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2);">
                 <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
@@ -49,7 +49,7 @@
     </div>
 
     <!-- Phishing Blocked -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-white/5">
+    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
         <div class="flex items-start justify-between mb-3">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);">
                 <i class="fa-solid fa-fish-fins text-amber-500 text-sm"></i>
@@ -61,7 +61,7 @@
     </div>
 
     <!-- ECDSA Signed Verdicts -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-white/5">
+    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
         <div class="flex items-start justify-between mb-3">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2);">
                 <i class="fa-solid fa-signature text-green-500 text-sm"></i>
@@ -77,8 +77,8 @@
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
     <!-- Live Alert Feed (2/3 width) -->
-    <div class="xl:col-span-2 glass-panel rounded-xl border border-white/5 flex flex-col" style="max-height:420px">
-        <div class="px-5 py-3.5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+    <div class="xl:col-span-2 glass-panel rounded-xl border border-[var(--color-border)] flex flex-col" style="max-height:420px">
+        <div class="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-2">
                 <div class="w-2 h-2 rounded-full dot-online" id="feed-live-dot"></div>
                 <h3 class="text-sm font-semibold text-slate-200">Live Threat Feed</h3>
@@ -104,7 +104,7 @@
     <div class="space-y-4">
 
         <!-- Device Status -->
-        <div class="glass-panel rounded-xl border border-white/5 p-5">
+        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
             <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
                 <i class="fa-solid fa-microchip text-blue-400 text-xs"></i>
                 System Status
@@ -130,7 +130,7 @@
         </div>
 
         <!-- Threat breakdown bar -->
-        <div class="glass-panel rounded-xl border border-white/5 p-5">
+        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
             <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
                 <i class="fa-solid fa-chart-bar text-violet-400 text-xs"></i>
                 Threat Breakdown
@@ -167,7 +167,7 @@
         </div>
 
         <!-- Quick actions -->
-        <div class="glass-panel rounded-xl border border-white/5 p-5">
+        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
             <h3 class="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
                 <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
                 Quick Actions
@@ -197,10 +197,11 @@
 (function() {
     'use strict';
 
-    let totalDeepfakes = 0;
-    let totalPhishing  = 0;
-    let totalVerdicts  = 0;
-    let activeScans    = 0;
+    let totalDeepfakes = {{ deepfakes_flagged }};
+    let totalPhishing  = {{ phishing_blocked }};
+    let totalVerdicts  = {{ total_signed }};
+    let activeScans    = {{ total_scans }};   // server-rendered initial value
+
 
     // ── Poll stats from API ───────────────────────────────────────────────────
     async function pollStats() {
@@ -311,16 +312,35 @@
         const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
         const item = document.createElement('div');
-        item.className = `feed-item flex items-start gap-3 p-3 rounded-lg ${bgColor} border border-white/5`;
-        item.innerHTML = `
-            <i class="fa-solid ${typeIcon} ${typeColor} text-xs mt-1 flex-shrink-0"></i>
-            <div class="min-w-0 flex-1">
-                <div class="flex items-baseline justify-between gap-2">
-                    <p class="text-xs font-semibold text-slate-200 truncate">${data.title || 'Alert'}</p>
-                    <span class="text-xs text-slate-600 flex-shrink-0 font-mono">${ts}</span>
-                </div>
-                <p class="text-xs text-slate-400 mt-0.5 break-words">${data.message || ''}</p>
-            </div>`;
+        item.className = `feed-item flex items-start gap-3 p-3 rounded-lg ${bgColor} border border-[var(--color-border)]`;
+        const icon = document.createElement('i');
+        icon.className = `fa-solid ${typeIcon} ${typeColor} text-xs mt-1 flex-shrink-0`;
+        item.appendChild(icon);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'min-w-0 flex-1';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'flex items-baseline justify-between gap-2';
+
+        const titleP = document.createElement('p');
+        titleP.className = 'text-xs font-semibold text-slate-200 truncate';
+        titleP.textContent = data.title || 'Alert';
+        headerDiv.appendChild(titleP);
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'text-xs text-slate-600 flex-shrink-0 font-mono';
+        timeSpan.textContent = ts;
+        headerDiv.appendChild(timeSpan);
+
+        contentDiv.appendChild(headerDiv);
+
+        const msgP = document.createElement('p');
+        msgP.className = 'text-xs text-slate-400 mt-0.5 break-words';
+        msgP.textContent = data.message || '';
+        contentDiv.appendChild(msgP);
+
+        item.appendChild(contentDiv);
 
         feed.insertBefore(item, feed.firstChild);
 
@@ -361,6 +381,13 @@
                 if (_origStatus) _origStatus(s);
             };
         }
+
+        // Render server-side initial values into stat cards immediately
+        setCounter('stat-active-scans', activeScans);
+        setCounter('stat-deepfakes',    totalDeepfakes);
+        setCounter('stat-phishing',     totalPhishing);
+        setCounter('stat-verdicts',     totalVerdicts);
+        updateBreakdown(totalDeepfakes, totalPhishing, activeScans);
 
         pollStats();
         pollEngineHealth();

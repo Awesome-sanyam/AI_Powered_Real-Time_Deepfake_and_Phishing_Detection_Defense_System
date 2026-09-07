@@ -25,11 +25,11 @@
     <script>
     (function() {
         const stored = localStorage.getItem('soc-theme');
-        // Default to dark (SOC aesthetic) if nothing stored
-        if (stored === 'light') {
-            document.documentElement.classList.remove('dark');
-        } else {
+        // Phase 4: Default to Light Minimalist Theme if nothing stored
+        if (stored === 'dark') {
             document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     })();
     </script>
@@ -342,11 +342,26 @@
             .then(d => {
                 const el = document.getElementById('ai-engine-status');
                 if (!el) return;
+                
+                // Clear existing content
+                el.innerHTML = '';
+                const dot = document.createElement('div');
+                dot.className = 'w-2 h-2 rounded-full flex-shrink-0';
+                
+                const text = document.createElement('span');
+                text.className = 'text-xs';
+                text.textContent = 'AI Engine ' + (d.status === 'ok' ? 'online' : 'offline');
+                
                 if (d.status === 'ok') {
-                    el.innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div><span class="text-xs text-green-600 dark:text-green-400">AI Engine online</span>';
+                    dot.classList.add('bg-green-500');
+                    text.classList.add('text-green-600', 'dark:text-green-400');
                 } else {
-                    el.innerHTML = '<div class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div><span class="text-xs text-amber-600 dark:text-amber-400">AI Engine offline</span>';
+                    dot.classList.add('bg-amber-500');
+                    text.classList.add('text-amber-600', 'dark:text-amber-400');
                 }
+                
+                el.appendChild(dot);
+                el.appendChild(text);
             })
             .catch(() => {});
     });
@@ -365,19 +380,42 @@
         const toast = document.createElement('div');
         toast.className = `glass-panel rounded-lg border-l-4 p-3.5 pointer-events-auto shadow-xl toast-enter`;
         toast.style.borderLeftColor = iconColor;
-        toast.innerHTML = `
-            <div class="flex gap-3 items-start">
-                <i class="fa-solid ${iconClass} mt-0.5 flex-shrink-0" style="color:${iconColor};"></i>
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold leading-tight" style="color:var(--color-text);">${title}</p>
-                    <p class="text-xs mt-0.5 break-words" style="color:var(--color-muted);">${message}</p>
-                </div>
-                <button onclick="this.closest('div.glass-panel').remove()"
-                        class="ml-auto flex-shrink-0 text-xs" style="color:var(--color-muted);">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>`;
 
+        const flexContainer = document.createElement('div');
+        flexContainer.className = 'flex gap-3 items-start';
+
+        const icon = document.createElement('i');
+        icon.className = `fa-solid ${iconClass} mt-0.5 flex-shrink-0`;
+        icon.style.color = iconColor;
+        flexContainer.appendChild(icon);
+
+        const textContainer = document.createElement('div');
+        textContainer.className = 'min-w-0';
+
+        const titleEl = document.createElement('p');
+        titleEl.className = 'text-sm font-semibold leading-tight';
+        titleEl.style.color = 'var(--color-text)';
+        titleEl.textContent = title;
+        textContainer.appendChild(titleEl);
+
+        const msgEl = document.createElement('p');
+        msgEl.className = 'text-xs mt-0.5 break-words';
+        msgEl.style.color = 'var(--color-muted)';
+        msgEl.textContent = message;
+        textContainer.appendChild(msgEl);
+
+        flexContainer.appendChild(textContainer);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'ml-auto flex-shrink-0 text-xs';
+        closeBtn.style.color = 'var(--color-muted)';
+        const closeIcon = document.createElement('i');
+        closeIcon.className = 'fa-solid fa-xmark';
+        closeBtn.appendChild(closeIcon); // safe, static html
+        closeBtn.onclick = () => toast.remove();
+        flexContainer.appendChild(closeBtn);
+
+        toast.appendChild(flexContainer);
         container.appendChild(toast);
         setTimeout(() => {
             toast.style.transition = 'opacity 0.3s ease';

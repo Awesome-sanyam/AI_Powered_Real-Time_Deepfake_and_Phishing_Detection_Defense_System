@@ -55,8 +55,14 @@ class PhishingScannerView(View):
 
 class PhishingScanListView(generics.ListAPIView):
     """GET /api/phishing/scans/ — list all phishing scan results."""
-    queryset = PhishingScan.objects.all()
     serializer_class = PhishingScanSerializer
+
+    def get_queryset(self):
+        queryset = PhishingScan.objects.all().order_by('-created_at')
+        session_id = self.request.query_params.get('session_id')
+        if session_id:
+            queryset = queryset.filter(session_id=session_id)
+        return queryset
 
 
 class PhishingScanDetailView(generics.RetrieveAPIView):

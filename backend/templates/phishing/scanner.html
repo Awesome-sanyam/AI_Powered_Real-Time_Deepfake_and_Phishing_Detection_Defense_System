@@ -24,12 +24,12 @@
     /* Confidence fill */
     .conf-fill { transition: width 0.7s cubic-bezier(0.22,1,0.36,1); }
 
-    /* Textarea polish */
+    /* Textarea polish — uses CSS custom properties for light/dark compatibility */
     textarea {
         resize: vertical;
-        background: rgba(15,23,42,0.6);
-        border: 1px solid rgba(255,255,255,0.06);
-        color: #e2e8f0;
+        background: var(--color-surface, rgba(15,23,42,0.6));
+        border: 1px solid var(--color-border, rgba(255,255,255,0.06));
+        color: var(--color-text, #e2e8f0);
         border-radius: 0.5rem;
         padding: 0.75rem;
         font-size: 0.8125rem;
@@ -39,7 +39,14 @@
         transition: border-color 0.2s;
     }
     textarea:focus { outline: none; border-color: rgba(59,130,246,0.5); }
-    textarea::placeholder { color: #475569; }
+    textarea::placeholder { color: var(--color-muted, #475569); }
+
+    /* URL input */
+    #input-url {
+        background: var(--color-surface, rgba(15,23,42,0.6));
+        border: 1px solid var(--color-border, rgba(255,255,255,0.06));
+        color: var(--color-text, #e2e8f0);
+    }
 
     /* Spinner */
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -53,7 +60,7 @@
     <!-- ── Left: Input form ──────────────────────────────────────────────────── -->
     <div class="flex-1 flex flex-col gap-4 min-w-0">
 
-        <div class="glass-panel rounded-xl border border-white/5 p-5">
+        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
             <h2 class="text-sm font-semibold text-slate-200 mb-1">Analyse suspicious content</h2>
             <p class="text-xs text-slate-500 mb-5">Paste an email body, headers, or URL. The AI engine will classify intent, check SPF/DKIM, and compute URL entropy.</p>
 
@@ -78,7 +85,8 @@
                     <input id="input-url"
                            type="text"
                            placeholder="https://suspicious-domain.tk/verify/account"
-                           class="w-full bg-[rgba(15,23,42,0.6)] border border-white/6 text-slate-200 rounded-lg px-3 py-2.5 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors">
+                           class="w-full rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500/50 transition-colors"
+                           style="background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text);">
                 </div>
 
                 <!-- Email headers -->
@@ -112,7 +120,7 @@
         </div>
 
         <!-- Sample presets -->
-        <div class="glass-panel rounded-xl border border-white/5 p-4">
+        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-4">
             <p class="text-xs text-slate-600 mb-3 uppercase tracking-widest font-semibold">Quick test samples</p>
             <div class="flex flex-wrap gap-2">
                 <button onclick="loadSample('phishing')"
@@ -135,7 +143,7 @@
     <div class="w-full xl:w-96 flex-shrink-0 space-y-4">
 
         <!-- Waiting state -->
-        <div id="results-placeholder" class="glass-panel rounded-xl border border-white/5 p-8 flex flex-col items-center justify-center text-center gap-3">
+        <div id="results-placeholder" class="glass-panel rounded-xl border border-[var(--color-border)] p-8 flex flex-col items-center justify-center text-center gap-3">
             <div class="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
                 <i class="fa-solid fa-magnifying-glass text-slate-600 text-xl"></i>
             </div>
@@ -146,7 +154,7 @@
         <div id="results-panel" class="hidden space-y-4 result-in">
 
             <!-- Main verdict card -->
-            <div id="verdict-card" class="glass-panel rounded-xl border border-white/5 p-5">
+            <div id="verdict-card" class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
                 <div class="flex items-center gap-4 mb-4">
                     <div id="res-icon"
                          class="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
@@ -168,14 +176,14 @@
                 </div>
 
                 <!-- LLM Explanation -->
-                <div class="bg-slate-900/60 rounded-lg p-3 text-xs text-slate-400 leading-relaxed border border-white/5">
+                <div class="bg-slate-900/60 rounded-lg p-3 text-xs text-slate-400 leading-relaxed border border-[var(--color-border)]">
                     <p class="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-1">LLM Intent Analysis</p>
                     <p id="res-explanation">—</p>
                 </div>
             </div>
 
             <!-- Signals -->
-            <div class="glass-panel rounded-xl border border-white/5 p-5">
+            <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
                 <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
                     <i class="fa-solid fa-flag text-amber-400 mr-1"></i> Detection Signals
                 </h3>
@@ -185,7 +193,7 @@
             </div>
 
             <!-- URL forensics -->
-            <div id="url-forensics-panel" class="glass-panel rounded-xl border border-white/5 p-5 hidden">
+            <div id="url-forensics-panel" class="glass-panel rounded-xl border border-[var(--color-border)] p-5 hidden">
                 <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
                     <i class="fa-solid fa-link text-blue-400 mr-1"></i> URL Forensics
                 </h3>
@@ -206,7 +214,7 @@
             </div>
 
             <!-- Header validation -->
-            <div id="header-panel" class="glass-panel rounded-xl border border-white/5 p-5 hidden">
+            <div id="header-panel" class="glass-panel rounded-xl border border-[var(--color-border)] p-5 hidden">
                 <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
                     <i class="fa-solid fa-shield text-violet-400 mr-1"></i> Header Validation
                 </h3>
@@ -216,7 +224,7 @@
             </div>
 
             <!-- ECDSA signature -->
-            <div id="ecdsa-card" class="glass-panel rounded-xl border border-white/5 p-5 hidden">
+            <div id="ecdsa-card" class="glass-panel rounded-xl border border-[var(--color-border)] p-5 hidden">
                 <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">Verdict Signature</h3>
                 <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <i class="fa-solid fa-shield-check text-blue-400 text-base"></i>
@@ -369,13 +377,19 @@ Senior Analyst, Finance`,
 
         if (isPhishing) {
             icon.className    = 'w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center flex-shrink-0';
-            icon.innerHTML    = '<i class="fa-solid fa-fish-fins text-red-400 text-xl"></i>';
+            icon.innerHTML = '';
+            const i = document.createElement('i');
+            i.className = 'fa-solid fa-fish-fins text-red-400 text-xl';
+            icon.appendChild(i);
             verdict.textContent = 'PHISHING DETECTED';
             verdict.className = 'text-lg font-bold text-red-400';
             confBar.className = 'h-full bg-red-500 rounded-full conf-fill';
         } else {
             icon.className    = 'w-12 h-12 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0';
-            icon.innerHTML    = '<i class="fa-solid fa-circle-check text-green-400 text-xl"></i>';
+            icon.innerHTML = '';
+            const i = document.createElement('i');
+            i.className = 'fa-solid fa-circle-check text-green-400 text-xl';
+            icon.appendChild(i);
             verdict.textContent = 'CLEAN / SAFE';
             verdict.className = 'text-lg font-bold text-green-400';
             confBar.className = 'h-full bg-green-500 rounded-full conf-fill';
@@ -391,16 +405,28 @@ Senior Analyst, Finance`,
         const signalsEl = document.getElementById('res-signals');
         const signals   = data.signals || [];
         if (signals.length > 0) {
-            signalsEl.innerHTML = signals.map(sig => {
-                const isUrlSig = sig.startsWith('url-') || sig.startsWith('entropy');
+            signalsEl.innerHTML = '';
+            signals.forEach(sig => {
+                // XSS-safe: build elements via DOM API, not innerHTML string injection
+                const isUrlSig = sig.startsWith('url-') || sig.startsWith('entropy') || sig.startsWith('high-entropy');
                 const isHdrSig = sig.startsWith('spf') || sig.startsWith('dkim') || sig.startsWith('dmarc') || sig.startsWith('reply-to') || sig.startsWith('missing');
                 const colorCls = isUrlSig ? 'border-blue-500/30 bg-blue-500/5 text-blue-400'
                                : isHdrSig ? 'border-violet-500/30 bg-violet-500/5 text-violet-400'
                                :            'border-amber-500/30 bg-amber-500/5 text-amber-400';
-                return `<span class="signal-pill ${colorCls}"><i class="fa-solid fa-flag text-xs"></i>${sig}</span>`;
-            }).join('');
+                const span = document.createElement('span');
+                span.className = `signal-pill ${colorCls}`;
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-flag text-xs';
+                span.appendChild(icon);
+                span.appendChild(document.createTextNode(sig));  // textContent — XSS safe
+                signalsEl.appendChild(span);
+            });
         } else {
-            signalsEl.innerHTML = '<span class="text-xs text-slate-600">No threat signals detected</span>';
+            signalsEl.innerHTML = '';
+            const span = document.createElement('span');
+            span.className = 'text-xs text-slate-600';
+            span.textContent = 'No threat signals detected';
+            signalsEl.appendChild(span);
         }
 
         // URL panel (heuristic from signals)
@@ -429,14 +455,27 @@ Senior Analyst, Finance`,
                 { label: 'Reply-To',     signal: 'reply-to-from-mismatch',pass: !signals.includes('reply-to-from-mismatch') },
                 { label: 'Display Name', signal: 'display-name-spoof',    pass: !signals.includes('display-name-spoof') },
             ];
-            hdrChecks.innerHTML = checks.map(c => `
-                <div class="flex items-center justify-between py-1 border-b border-white/3 last:border-0">
-                    <span class="text-slate-500">${c.label}</span>
-                    <span class="${c.pass ? 'text-green-400' : 'text-red-400'} font-mono">
-                        <i class="fa-solid ${c.pass ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1"></i>
-                        ${c.pass ? 'PASS' : 'FAIL'}
-                    </span>
-                </div>`).join('');
+            hdrChecks.innerHTML = '';
+            checks.forEach(c => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between py-1 border-b border-white/3 last:border-0';
+                
+                const label = document.createElement('span');
+                label.className = 'text-slate-500';
+                label.textContent = c.label;
+                row.appendChild(label);
+                
+                const status = document.createElement('span');
+                status.className = c.pass ? 'text-green-400 font-mono' : 'text-red-400 font-mono';
+                
+                const icon = document.createElement('i');
+                icon.className = c.pass ? 'fa-solid fa-circle-check mr-1' : 'fa-solid fa-circle-xmark mr-1';
+                status.appendChild(icon);
+                status.appendChild(document.createTextNode(c.pass ? 'PASS' : 'FAIL'));
+                
+                row.appendChild(status);
+                hdrChecks.appendChild(row);
+            });
         }
 
         // ECDSA badge

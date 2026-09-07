@@ -144,9 +144,10 @@ class VisualArtifactDetector(nn.Module):
             sub = frames[i : i + 4]
             out = self.model(self.preprocess_frames(sub))       # [B, 1]
             scores.extend(out.squeeze(1).cpu().float().tolist())
-            # Release MPS cache between sub-batches
+            # Release MPS cache AND Python GC objects between sub-batches
             if DEVICE.type == "mps":
                 torch.mps.empty_cache()
+            gc.collect()
         return scores
 
 
@@ -167,14 +168,15 @@ class LipSyncVerifier:
     UPPER_LIP: int = 13
     LOWER_LIP: int = 14
 
-    def __init__(self) -> None:
-        self._face_mesh = mp.solutions.face_mesh.FaceMesh(
+    def __init__(self, face_mesh=None) -> None:
+        self._face_mesh = face_mesh or mp.solutions.face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
             refine_landmarks=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
         )
+        self._owns_face_mesh = face_mesh is None  # only close if we created it
 
     def extract_lip_aperture(
         self, frames: list[np.ndarray], fps: float  # noqa: ARG002
@@ -241,13 +243,14 @@ class BlinkRateDetector:
     MIN_BPM: float = 8.0
     MAX_BPM: float = 30.0
 
-    def __init__(self) -> None:
-        self._face_mesh = mp.solutions.face_mesh.FaceMesh(
+    def __init__(self, face_mesh=None) -> None:
+        self._face_mesh = face_mesh or mp.solutions.face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
             refine_landmarks=True,
             min_detection_confidence=0.5,
         )
+        self._owns_face_mesh = face_mesh is None
 
     def _ear(self, lm) -> float:
         """Compute Eye Aspect Ratio from landmark list."""
@@ -305,8 +308,17 @@ class CrossModalVerificationEngine:
         ecdsa_private_key_pem: Optional[str] = None,
     ) -> None:
         self.visual = VisualArtifactDetector(visual_weights_path)
-        self.lip_sync = LipSyncVerifier()
-        self.blink = BlinkRateDetector()
+        # Share a single FaceMesh instance — saves ~30MB and one detection pass per frame batch
+        _shared_face_mesh = mp.solutions.face_mesh.FaceMesh(
+            static_image_mode=False,
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+        self.lip_sync = LipSyncVerifier(face_mesh=_shared_face_mesh)
+        self.blink    = BlinkRateDetector(face_mesh=_shared_face_mesh)
+        self._shared_face_mesh = _shared_face_mesh  # keep reference for cleanup
         self.ecdsa = ECDSAService(private_key_pem=ecdsa_private_key_pem)
         logger.info(f"CrossModalVerificationEngine ready on {DEVICE}")
 
@@ -393,7 +405,17 @@ class CrossModalVerificationEngine:
 
     def cleanup(self) -> None:
         """Release all GPU/MPS resources. Called by FastAPI lifespan on shutdown."""
+        # Move model to CPU first so MPS allocation is deterministically freed
+        try:
+            self.visual.model.cpu()
+        except Exception:
+            pass
         del self.visual
+        # Release shared FaceMesh
+        try:
+            self._shared_face_mesh.close()
+        except Exception:
+            pass
         if DEVICE.type == "mps":
             torch.mps.empty_cache()
         gc.collect()

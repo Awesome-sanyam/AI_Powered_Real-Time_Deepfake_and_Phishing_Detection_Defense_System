@@ -11,7 +11,7 @@
     #threat-network {
         width: 100%;
         height: 100%;
-        background: #0b1120;
+        background: var(--color-surface, #0b1120);  /* theme-aware: dark by default */
         border-radius: 0.75rem;
     }
     /* Legend dot */
@@ -37,34 +37,34 @@
 <div class="flex flex-col h-full gap-4" style="min-height: calc(100vh - 5rem);">
 
     <!-- ─── Toolbar ──────────────────────────────────────────────────────────── -->
-    <div class="glass-panel rounded-xl border border-white/5 px-4 py-3 flex flex-wrap items-center gap-3">
+    <div class="glass-panel rounded-xl border border-[var(--color-border)] px-4 py-3 flex flex-wrap items-center gap-3">
 
         <!-- Filter controls -->
         <span class="text-xs text-slate-600 uppercase tracking-widest font-semibold mr-1">Filter</span>
 
         <button id="filter-all"
                 onclick="setFilter(null)"
-                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-300 text-xs hover:bg-slate-700 transition-colors">
+                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-300 text-xs hover:bg-slate-700 transition-colors">
             All Nodes
         </button>
         <button id="filter-email"
                 onclick="setFilter('email')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
             <i class="fa-solid fa-envelope mr-1 text-blue-400"></i>Email
         </button>
         <button id="filter-domain"
                 onclick="setFilter('domain')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
             <i class="fa-solid fa-globe mr-1 text-orange-400"></i>Domain
         </button>
         <button id="filter-ip"
                 onclick="setFilter('ip')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
             <i class="fa-solid fa-network-wired mr-1 text-red-400"></i>IP
         </button>
         <button id="filter-session"
                 onclick="setFilter('session')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
             <i class="fa-solid fa-camera mr-1 text-violet-400"></i>Session
         </button>
 
@@ -73,7 +73,7 @@
 
         <!-- Actions -->
         <button onclick="viz && viz.refresh()"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
             <i class="fa-solid fa-rotate-right text-xs"></i> Refresh
         </button>
 
@@ -89,11 +89,11 @@
     <div class="flex flex-1 gap-4 min-h-0">
 
         <!-- Graph canvas -->
-        <div class="flex-1 glass-panel rounded-xl border border-white/5 overflow-hidden relative min-h-0">
+        <div class="flex-1 glass-panel rounded-xl border border-[var(--color-border)] overflow-hidden relative min-h-0">
             <div id="threat-network"></div>
 
             <!-- Legend overlay -->
-            <div class="absolute bottom-4 left-4 glass-panel rounded-lg border border-white/5 p-3 space-y-2 pointer-events-none">
+            <div class="absolute bottom-4 left-4 glass-panel rounded-lg border border-[var(--color-border)] p-3 space-y-2 pointer-events-none">
                 <p class="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-1">Legend</p>
                 <div class="flex items-center gap-2"><div class="legend-dot bg-blue-600"></div><span class="text-xs text-slate-400">Email</span></div>
                 <div class="flex items-center gap-2"><div class="legend-dot bg-orange-600"></div><span class="text-xs text-slate-400">Domain</span></div>
@@ -117,7 +117,7 @@
         <div class="w-72 flex-shrink-0 flex flex-col gap-3">
 
             <!-- Node detail panel -->
-            <div class="glass-panel rounded-xl border border-white/5 p-4 flex-1">
+            <div class="glass-panel rounded-xl border border-[var(--color-border)] p-4 flex-1">
                 <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-circle-info text-blue-400 text-xs"></i>
                     Node Details
@@ -128,7 +128,7 @@
             </div>
 
             <!-- Graph stats -->
-            <div class="glass-panel rounded-xl border border-white/5 p-4">
+            <div class="glass-panel rounded-xl border border-[var(--color-border)] p-4">
                 <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
                     <i class="fa-solid fa-chart-pie text-rose-400 text-xs mr-1"></i>
                     Composition
@@ -150,7 +150,7 @@
                         <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span> Session</span>
                         <span id="count-session" class="text-slate-400 font-mono">0</span>
                     </div>
-                    <div class="border-t border-white/5 pt-2 flex items-center justify-between text-xs">
+                    <div class="border-t border-[var(--color-border)] pt-2 flex items-center justify-between text-xs">
                         <span class="text-slate-600">High Risk (&gt;70%)</span>
                         <span id="count-high-risk" class="text-red-400 font-mono">0</span>
                     </div>

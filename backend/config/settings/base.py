@@ -103,7 +103,8 @@ REST_FRAMEWORK = {
 }
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = True   # Dev only — restrict in production
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = []
 
 # ── AI Engine ─────────────────────────────────────────────────────────────────
 AI_ENGINE_BASE_URL = os.environ.get("AI_ENGINE_BASE_URL", "http://localhost:8001")

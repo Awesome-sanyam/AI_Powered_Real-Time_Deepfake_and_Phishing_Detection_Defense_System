@@ -27,28 +27,46 @@ except ImportError:
     logger.warning("py2neo not installed — Neo4j graph features disabled")
 
 
-# ── Connection factory ─────────────────────────────────────────────────────────
+# ── Module-level connection pool ───────────────────────────────────────────────
+# Re-using a single Graph instance avoids opening a new TCP connection + running
+# RETURN 1 on every Celery task call (which caused connection storms under load).
+
+_graph_instance = None
+_graph_last_check: float = 0.0
+_GRAPH_LIVENESS_INTERVAL: float = 30.0   # re-validate at most once per 30 seconds
+
 
 def _get_graph() -> "Graph | None":
     """
-    Return a connected py2neo Graph instance, or None if unavailable.
-    Connection errors are caught and logged — never propagated to callers.
+    Return the module-level py2neo Graph instance.
+    Opens a new connection only on first call or after a connection failure.
+    Performs a liveness check at most every 30 seconds.
     """
+    global _graph_instance, _graph_last_check
+
     if not _PY2NEO_AVAILABLE:
         return None
 
-    uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-    user = os.environ.get("NEO4J_USER", "neo4j")
+    import time
+
+    now = time.monotonic()
+    uri      = os.environ.get("NEO4J_URI",      "bolt://localhost:7687")
+    user     = os.environ.get("NEO4J_USER",     "neo4j")
     password = os.environ.get("NEO4J_PASSWORD", "neo4j_password")
 
-    try:
-        graph = Graph(uri, auth=(user, password))
-        # Force connection validation (py2neo is lazy)
-        graph.run("RETURN 1")
-        return graph
-    except Exception as exc:
-        logger.error(f"Neo4j connection failed ({uri}): {exc}")
-        return None
+    # First call or stale connection — attempt (re)connect
+    if _graph_instance is None or (now - _graph_last_check) > _GRAPH_LIVENESS_INTERVAL:
+        try:
+            g = _graph_instance or Graph(uri, auth=(user, password))
+            g.run("RETURN 1")
+            _graph_instance = g
+            _graph_last_check = now
+        except Exception as exc:
+            logger.error("Neo4j connection failed (%s): %s", uri, exc)
+            _graph_instance = None
+            return None
+
+    return _graph_instance
 
 
 # ── Health check ───────────────────────────────────────────────────────────────

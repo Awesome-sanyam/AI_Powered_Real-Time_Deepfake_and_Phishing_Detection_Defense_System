@@ -138,5 +138,7 @@ def _write_deepfake_to_graph(
                 "confidence": confidence,
             },
         )
+    except ImportError as exc:
+        logger.warning("graph_client import unavailable (non-critical): %s", exc)
     except Exception as exc:
-        logger.warning(f"Neo4j graph write skipped (non-critical): {exc}")
+        logger.warning("Neo4j graph write skipped (non-critical): %s", exc)
