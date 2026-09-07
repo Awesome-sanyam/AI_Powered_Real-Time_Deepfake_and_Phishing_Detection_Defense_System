@@ -10,7 +10,7 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
-from django.contrib.auth.decorators import login_required
+
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from rest_framework import generics

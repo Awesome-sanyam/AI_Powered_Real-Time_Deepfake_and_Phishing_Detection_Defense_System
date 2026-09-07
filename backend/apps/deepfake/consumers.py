@@ -20,7 +20,7 @@ Message protocol (server → client):
 import base64
 import json
 import logging
-from datetime import datetime, timezone
+
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .tasks import analyze_deepfake_async
