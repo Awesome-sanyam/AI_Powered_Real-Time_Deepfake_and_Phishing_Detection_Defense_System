@@ -154,8 +154,8 @@ class ThreatGraphVisualizer {
         this._nodes.add([{
             id: 'placeholder',
             label: 'No threat data\n(Neo4j offline or no scans yet)',
-            color: { background: '#1e293b', border: '#475569' },
-            font: { color: '#64748b', size: 14 },
+            color: { background: '#f4f4f5', border: '#e4e4e7' }, // surface-sunken, border-default
+            font: { color: '#71717a', size: 14 }, // text-muted
             shape: 'box',
         }]);
     }
@@ -174,7 +174,7 @@ class ThreatGraphVisualizer {
             title:      this._buildTooltip(raw),
             shape:      this._nodeShape(type),
             color:      { background: color.bg, border: color.border, highlight: { background: color.bg, border: '#ffffff' } },
-            font:       { color: '#f8fafc', size: 13, face: 'monospace' },
+            font:       { color: '#ffffff', size: 13, face: 'monospace' },
             borderWidth: risk >= 0.7 ? 3 : 1,
             shadow:     risk >= 0.7 ? { enabled: true, color: color.border, size: 12 } : false,
             // Store raw for sidebar
@@ -197,14 +197,14 @@ class ThreatGraphVisualizer {
 
     _nodeColor(type, risk) {
         const palette = {
-            email:   { bg: '#1d4ed8', border: '#3b82f6' },
-            domain:  { bg: '#c2410c', border: '#f97316' },
-            ip:      { bg: '#991b1b', border: '#ef4444' },
-            session: { bg: '#7e22ce', border: '#a855f7' },
+            email:   { bg: '#1d4ed8', border: '#3b82f6' }, // Info
+            domain:  { bg: '#b45309', border: '#f59e0b' }, // Warning
+            ip:      { bg: '#b91c1c', border: '#ef4444' }, // Danger
+            session: { bg: '#047857', border: '#10b981' }, // Success
         };
-        const base = palette[type] || { bg: '#1e293b', border: '#64748b' };
+        const base = palette[type] || { bg: '#a1a1aa', border: '#d4d4d8' };
         // Intensify border for high-risk nodes
-        if (risk >= 0.8) base.border = '#fbbf24';
+        if (risk >= 0.7) base.border = '#ef4444'; // danger-border
         return base;
     }
 
@@ -216,10 +216,10 @@ class ThreatGraphVisualizer {
     _buildTooltip(raw) {
         const risk = parseFloat(raw.risk_score || 0);
         const pct  = Math.round(risk * 100);
-        return `<div style="background:#0f172a;padding:8px;border-radius:6px;font-family:monospace;font-size:12px;color:#f8fafc;max-width:220px">
+        return `<div style="background:#ffffff;padding:8px;border:1px solid #e4e4e7;border-radius:6px;font-family:monospace;font-size:12px;color:#27272a;max-width:220px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
           <b>${raw.node_type || 'Node'}</b><br>
           ${this._truncate(raw.label || raw.id || '', 40)}<br>
-          Risk: <span style="color:${risk >= 0.7 ? '#ef4444' : '#22c55e'}">${pct}%</span>
+          Risk: <span style="color:${risk >= 0.7 ? '#ef4444' : '#10b981'}">${pct}%</span>
         </div>`;
     }
 
@@ -255,20 +255,20 @@ class ThreatGraphVisualizer {
         const raw   = node._raw || node;
         const risk  = parseFloat(raw.risk_score || 0);
         const pct   = Math.round(risk * 100);
-        const color = risk >= 0.7 ? 'text-red-400' : risk >= 0.4 ? 'text-amber-400' : 'text-green-400';
+        const color = risk >= 0.7 ? 'text-danger-text' : risk >= 0.4 ? 'text-warning-text' : 'text-success-text';
 
         this._sidebarEl.innerHTML = `
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs uppercase tracking-widest text-slate-500">${raw.node_type || 'Entity'}</span>
-                    <span class="text-xs px-2 py-1 rounded-full bg-slate-700 ${color} font-mono">Risk: ${pct}%</span>
+                    <span class="text-[13px] font-medium text-text-secondary uppercase">${raw.node_type || 'Entity'}</span>
+                    <span class="text-xs px-2 py-1 rounded bg-surface-sunken border border-border-default ${color} font-mono">Risk: ${pct}%</span>
                 </div>
-                <div class="font-mono text-sm text-slate-200 break-all">${raw.label || raw.id}</div>
-                ${raw.signals ? `<div class="text-xs text-slate-400">Signals: ${raw.signals}</div>` : ''}
-                <div class="pt-2 border-t border-slate-700 text-xs text-slate-500 space-y-1">
+                <div class="font-mono text-sm text-text-primary break-all">${raw.label || raw.id}</div>
+                ${raw.signals ? `<div class="text-xs text-text-muted">Signals: ${raw.signals}</div>` : ''}
+                <div class="pt-2 border-t border-border-default text-xs text-text-secondary space-y-1">
                     ${Object.entries(raw)
                         .filter(([k]) => !['id','label','node_type','risk_score','_raw','signals'].includes(k))
-                        .map(([k, v]) => `<div><span class="text-slate-500">${k}:</span> <span class="text-slate-300">${String(v).slice(0,60)}</span></div>`)
+                        .map(([k, v]) => `<div><span class="text-text-muted">${k}:</span> <span class="text-text-primary">${String(v).slice(0,60)}</span></div>`)
                         .join('')}
                 </div>
             </div>`;
@@ -277,7 +277,7 @@ class ThreatGraphVisualizer {
 
     _clearSidebar() {
         if (this._sidebarEl) {
-            this._sidebarEl.innerHTML = '<p class="text-slate-500 text-sm">Click a node to inspect</p>';
+            this._sidebarEl.innerHTML = '<p class="text-text-muted text-sm">Click a node to inspect</p>';
         }
     }
 

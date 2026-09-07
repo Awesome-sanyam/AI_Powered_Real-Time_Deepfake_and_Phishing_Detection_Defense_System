@@ -25,51 +25,51 @@
 <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
 
     <!-- Total Scans -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
+    <div class="bg-surface-sunken rounded-xl p-5">
         <div class="flex items-start justify-between mb-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2);">
-                <i class="fa-solid fa-spinner fa-spin text-blue-500 text-sm"></i>
+            <div class="w-8 h-8 rounded-full bg-info-bg border border-info-border flex items-center justify-center">
+                <i class="fa-solid fa-spinner fa-spin text-info-text text-xs"></i>
             </div>
-            <span class="text-xs font-mono" style="color:var(--color-muted);">LIVE</span>
+            <span class="text-xs font-mono text-text-muted">LIVE</span>
         </div>
-        <p id="stat-active-scans" class="text-3xl font-bold counter-val" style="color:var(--color-text);">{{ total_scans }}</p>
-        <p class="text-xs mt-1" style="color:var(--color-muted);">Total Scans</p>
+        <p id="stat-active-scans" class="text-[24px] font-medium text-text-primary counter-val">{{ total_scans }}</p>
+        <p class="text-[13px] text-text-secondary mt-1">Total Scans</p>
     </div>
 
     <!-- Deepfakes Flagged -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
+    <div class="bg-surface-sunken rounded-xl p-5">
         <div class="flex items-start justify-between mb-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2);">
-                <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
+            <div class="w-8 h-8 rounded-full bg-danger-bg border border-danger-border flex items-center justify-center">
+                <i class="fa-solid fa-triangle-exclamation text-danger-text text-xs"></i>
             </div>
-            <span class="text-xs text-red-500 font-mono" id="deepfake-trend">+{{ deepfakes_flagged }}</span>
+            <span class="text-xs font-mono text-danger-text" id="deepfake-trend">+{{ deepfakes_flagged }}</span>
         </div>
-        <p id="stat-deepfakes" class="text-3xl font-bold text-red-500 counter-val">{{ deepfakes_flagged }}</p>
-        <p class="text-xs mt-1" style="color:var(--color-muted);">Deepfakes Flagged</p>
+        <p id="stat-deepfakes" class="text-[24px] font-medium text-danger-text counter-val">{{ deepfakes_flagged }}</p>
+        <p class="text-[13px] text-text-secondary mt-1">Deepfakes Flagged</p>
     </div>
 
     <!-- Phishing Blocked -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
+    <div class="bg-surface-sunken rounded-xl p-5">
         <div class="flex items-start justify-between mb-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);">
-                <i class="fa-solid fa-fish-fins text-amber-500 text-sm"></i>
+            <div class="w-8 h-8 rounded-full bg-warning-bg border border-warning-border flex items-center justify-center">
+                <i class="fa-solid fa-fish-fins text-warning-text text-xs"></i>
             </div>
-            <span class="text-xs text-amber-500 font-mono" id="phishing-trend">+{{ phishing_blocked }}</span>
+            <span class="text-xs font-mono text-warning-text" id="phishing-trend">+{{ phishing_blocked }}</span>
         </div>
-        <p id="stat-phishing" class="text-3xl font-bold text-amber-500 counter-val">{{ phishing_blocked }}</p>
-        <p class="text-xs mt-1" style="color:var(--color-muted);">Phishing Blocked</p>
+        <p id="stat-phishing" class="text-[24px] font-medium text-warning-text counter-val">{{ phishing_blocked }}</p>
+        <p class="text-[13px] text-text-secondary mt-1">Phishing Blocked</p>
     </div>
 
     <!-- ECDSA Signed Verdicts -->
-    <div class="metric-card glass-panel rounded-xl p-5 border border-[var(--color-border)]">
+    <div class="bg-surface-sunken rounded-xl p-5">
         <div class="flex items-start justify-between mb-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2);">
-                <i class="fa-solid fa-signature text-green-500 text-sm"></i>
+            <div class="w-8 h-8 rounded-full bg-success-bg border border-success-border flex items-center justify-center">
+                <i class="fa-solid fa-signature text-success-text text-xs"></i>
             </div>
-            <span class="text-xs text-green-500 font-mono">SIGNED</span>
+            <span class="text-xs font-mono text-success-text">SIGNED</span>
         </div>
-        <p id="stat-verdicts" class="text-3xl font-bold text-green-500 counter-val">{{ total_signed }}</p>
-        <p class="text-xs mt-1" style="color:var(--color-muted);">Valid Signatures</p>
+        <p id="stat-verdicts" class="text-[24px] font-medium text-success-text counter-val">{{ total_signed }}</p>
+        <p class="text-[13px] text-text-secondary mt-1">Valid Signatures</p>
     </div>
 </div>
 
@@ -77,14 +77,14 @@
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
     <!-- Live Alert Feed (2/3 width) -->
-    <div class="xl:col-span-2 glass-panel rounded-xl border border-[var(--color-border)] flex flex-col" style="max-height:420px">
-        <div class="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between flex-shrink-0">
+    <div class="xl:col-span-2 bg-surface-card rounded-xl border border-border-default flex flex-col" style="max-height:420px">
+        <div class="px-5 py-4 border-b border-border-default flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full dot-online" id="feed-live-dot"></div>
-                <h3 class="text-sm font-semibold text-slate-200">Live Threat Feed</h3>
+                <div class="w-2 h-2 rounded-full bg-success-text live-dot" id="feed-live-dot"></div>
+                <h3 class="text-sm font-semibold text-text-primary">Live Threat Feed</h3>
             </div>
             <button onclick="document.getElementById('alert-feed').innerHTML = ''"
-                    class="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+                    class="text-xs font-medium text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border rounded px-1">
                 Clear
             </button>
         </div>
@@ -93,8 +93,8 @@
              aria-live="polite"
              aria-label="Live threat alert feed">
             <!-- Items injected by JS -->
-            <div class="flex items-center gap-3 py-3 text-slate-600">
-                <i class="fa-solid fa-satellite-dish fa-pulse text-slate-700"></i>
+            <div class="flex items-center gap-3 py-3 text-text-muted">
+                <i class="fa-solid fa-satellite-dish fa-pulse"></i>
                 <span class="text-sm">Listening for threat events…</span>
             </div>
         </div>
@@ -104,86 +104,86 @@
     <div class="space-y-4">
 
         <!-- Device Status -->
-        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
-            <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-microchip text-blue-400 text-xs"></i>
+        <div class="bg-surface-card rounded-xl border border-border-default p-5">
+            <h3 class="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-microchip text-info-border text-xs"></i>
                 System Status
             </h3>
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-500">Compute Device</span>
-                    <span id="device-badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">—</span>
+                    <span class="text-[13px] text-text-secondary">Compute Device</span>
+                    <span id="device-badge" class="text-xs px-2 py-0.5 rounded-full bg-surface-sunken text-text-muted border border-border-default font-mono">—</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-500">AI Engine</span>
-                    <span id="engine-status-badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">Probing…</span>
+                    <span class="text-[13px] text-text-secondary">AI Engine</span>
+                    <span id="engine-status-badge" class="text-xs px-2 py-0.5 rounded-full bg-surface-sunken text-text-muted border border-border-default font-mono">Probing…</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-500">Neo4j Graph</span>
-                    <span id="neo4j-status-badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">—</span>
+                    <span class="text-[13px] text-text-secondary">Neo4j Graph</span>
+                    <span id="neo4j-status-badge" class="text-xs px-2 py-0.5 rounded-full bg-surface-sunken text-text-muted border border-border-default font-mono">—</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-500">WebSocket Feed</span>
-                    <span id="ws-badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">—</span>
+                    <span class="text-[13px] text-text-secondary">WebSocket Feed</span>
+                    <span id="ws-badge" class="text-xs px-2 py-0.5 rounded-full bg-surface-sunken text-text-muted border border-border-default font-mono">—</span>
                 </div>
             </div>
         </div>
 
-        <!-- Threat breakdown bar -->
-        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
-            <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-chart-bar text-violet-400 text-xs"></i>
-                Threat Breakdown
+        <!-- Identity Vault -->
+        <div class="bg-surface-card rounded-xl border border-border-default p-5">
+            <h3 class="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-key text-info-border text-xs"></i>
+                Identity Vault
             </h3>
-            <div class="space-y-3">
-                <div>
-                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Deepfake</span>
-                        <span id="df-pct">0%</span>
+            <div class="space-y-0">
+                <!-- Example Row -->
+                <div class="flex items-center justify-between py-3 border-b border-border-default last:border-b-0">
+                    <div>
+                        <p class="text-[13px] font-medium text-text-primary">System Auth Key</p>
+                        <p class="text-xs font-mono text-text-muted mt-0.5">key_1a2b3c4d...</p>
                     </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div id="df-bar" class="h-full bg-red-500 rounded-full confidence-bar" style="width:0%"></div>
-                    </div>
-                </div>
-                <div>
-                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Phishing</span>
-                        <span id="ph-pct">0%</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div id="ph-bar" class="h-full bg-amber-500 rounded-full confidence-bar" style="width:0%"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-success-border"></div>
+                            <span class="text-xs text-text-muted">Active</span>
+                        </div>
+                        <button class="text-xs font-medium text-danger-text px-2 py-1 rounded border border-danger-border hover:bg-danger-bg transition-colors focus:outline-none focus:ring-2 focus:ring-danger-border">Revoke</button>
                     </div>
                 </div>
-                <div>
-                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Clean / Safe</span>
-                        <span id="ok-pct">100%</span>
+                <div class="flex items-center justify-between py-3 border-b border-border-default last:border-b-0">
+                    <div>
+                        <p class="text-[13px] font-medium text-text-primary">API Service User</p>
+                        <p class="text-xs font-mono text-text-muted mt-0.5">key_9f8e7d6c...</p>
                     </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div id="ok-bar" class="h-full bg-green-500 rounded-full confidence-bar" style="width:100%"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-danger-border"></div>
+                            <span class="text-xs text-text-muted">Revoked</span>
+                        </div>
+                        <button class="text-xs font-medium text-text-muted px-2 py-1 rounded border border-border-strong hover:bg-surface-sunken transition-colors focus:outline-none focus:ring-2 focus:ring-border-strong cursor-not-allowed" disabled>Revoked</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Quick actions -->
-        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
-            <h3 class="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
+        <div class="bg-surface-card rounded-xl border border-border-default p-5">
+            <h3 class="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-warning-border text-xs"></i>
                 Quick Actions
             </h3>
             <div class="space-y-2">
                 <a href="{% url 'deepfake:monitor' %}"
-                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs">
-                    <i class="fa-solid fa-play"></i> Start Deepfake Scan
+                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-surface-sunken border border-border-strong text-text-primary hover:bg-border-default transition-colors text-xs font-medium focus:outline-none focus:ring-2 focus:ring-info-border focus:ring-offset-1 focus:ring-offset-surface-card">
+                    <i class="fa-solid fa-play text-info-text"></i> Start Deepfake Scan
                 </a>
                 <a href="{% url 'phishing:scanner' %}"
-                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 transition-colors text-xs">
-                    <i class="fa-solid fa-magnifying-glass"></i> Scan for Phishing
+                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-surface-sunken border border-border-strong text-text-primary hover:bg-border-default transition-colors text-xs font-medium focus:outline-none focus:ring-2 focus:ring-info-border focus:ring-offset-1 focus:ring-offset-surface-card">
+                    <i class="fa-solid fa-magnifying-glass text-warning-text"></i> Scan for Phishing
                 </a>
                 <a href="{% url 'threat_graph:view' %}"
-                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 transition-colors text-xs">
-                    <i class="fa-solid fa-circle-nodes"></i> View Threat Graph
+                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-surface-sunken border border-border-strong text-text-primary hover:bg-border-default transition-colors text-xs font-medium focus:outline-none focus:ring-2 focus:ring-info-border focus:ring-offset-1 focus:ring-offset-surface-card">
+                    <i class="fa-solid fa-circle-nodes text-danger-text"></i> View Threat Graph
                 </a>
             </div>
         </div>
@@ -248,18 +248,7 @@
     }
 
     function updateBreakdown(df, ph, total) {
-        const safe = Math.max(0, total - df - ph);
-        const sum  = df + ph + safe || 1;
-        const dfPct = Math.round(df / sum * 100);
-        const phPct = Math.round(ph / sum * 100);
-        const okPct = 100 - dfPct - phPct;
-
-        document.getElementById('df-pct').textContent = `${dfPct}%`;
-        document.getElementById('df-bar').style.width  = `${dfPct}%`;
-        document.getElementById('ph-pct').textContent = `${phPct}%`;
-        document.getElementById('ph-bar').style.width  = `${phPct}%`;
-        document.getElementById('ok-pct').textContent = `${okPct}%`;
-        document.getElementById('ok-bar').style.width  = `${okPct}%`;
+        // Breakdown removed in favor of Identity Vault block
     }
 
     // ── AI Engine health ──────────────────────────────────────────────────────
@@ -271,17 +260,17 @@
 
             if (engineBadge) {
                 engineBadge.textContent = data.models_loaded ? 'Models loaded' : 'No models';
-                engineBadge.className = `text-xs px-2 py-0.5 rounded-full font-mono ${data.models_loaded ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'}`;
+                engineBadge.className = `text-xs px-2 py-0.5 rounded-full font-mono border ${data.models_loaded ? 'bg-success-bg text-success-text border-success-border' : 'bg-warning-bg text-warning-text border-warning-border'}`;
             }
             if (deviceBadge) {
                 deviceBadge.textContent = (data.device || 'cpu').toUpperCase();
-                deviceBadge.className = `text-xs px-2 py-0.5 rounded-full font-mono ${data.device === 'mps' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-800 text-slate-400'}`;
+                deviceBadge.className = `text-xs px-2 py-0.5 rounded-full font-mono border ${data.device === 'mps' ? 'bg-info-bg text-info-text border-info-border' : 'bg-surface-sunken text-text-muted border-border-default'}`;
             }
         } catch (e) {
             const engineBadge = document.getElementById('engine-status-badge');
             if (engineBadge) {
                 engineBadge.textContent = 'Offline';
-                engineBadge.className = 'text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-mono';
+                engineBadge.className = 'text-xs px-2 py-0.5 rounded-full font-mono border bg-danger-bg text-danger-text border-danger-border';
             }
         }
 
@@ -291,7 +280,7 @@
             const el  = document.getElementById('neo4j-status-badge');
             if (el) {
                 el.textContent = neo.status === 'ok' ? 'Connected' : 'Offline';
-                el.className   = `text-xs px-2 py-0.5 rounded-full font-mono ${neo.status === 'ok' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`;
+                el.className   = `text-xs px-2 py-0.5 rounded-full font-mono border ${neo.status === 'ok' ? 'bg-success-bg text-success-text border-success-border' : 'bg-danger-bg text-danger-text border-danger-border'}`;
             }
         } catch (e) {}
     }
@@ -306,13 +295,14 @@
         if (placeholder) placeholder.remove();
 
         const typeIcon  = { deepfake: 'fa-video', phishing: 'fa-fish-fins', identity: 'fa-key', info: 'fa-circle-info' }[data.type] || 'fa-circle-info';
-        const typeColor = { deepfake: 'text-red-400',  phishing: 'text-amber-400', identity: 'text-violet-400', info: 'text-blue-400' }[data.type] || 'text-blue-400';
-        const bgColor   = { deepfake: 'bg-red-500/5',  phishing: 'bg-amber-500/5', identity: 'bg-violet-500/5', info: 'bg-blue-500/5'  }[data.type] || 'bg-blue-500/5';
+        const typeColor = { deepfake: 'text-danger-text',  phishing: 'text-warning-text', identity: 'text-info-text', info: 'text-info-text' }[data.type] || 'text-info-text';
+        const bgColor   = { deepfake: 'bg-danger-bg',  phishing: 'bg-warning-bg', identity: 'bg-info-bg', info: 'bg-surface-sunken' }[data.type] || 'bg-surface-sunken';
+        const bdrColor  = { deepfake: 'border-danger-border',  phishing: 'border-warning-border', identity: 'border-info-border', info: 'border-border-default' }[data.type] || 'border-border-default';
 
         const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
         const item = document.createElement('div');
-        item.className = `feed-item flex items-start gap-3 p-3 rounded-lg ${bgColor} border border-[var(--color-border)]`;
+        item.className = `feed-item flex items-start gap-3 p-3 rounded border-l-[3px] border-y border-r ${bgColor} ${bdrColor} border-y-border-default border-r-border-default`;
         const icon = document.createElement('i');
         icon.className = `fa-solid ${typeIcon} ${typeColor} text-xs mt-1 flex-shrink-0`;
         item.appendChild(icon);
@@ -324,19 +314,19 @@
         headerDiv.className = 'flex items-baseline justify-between gap-2';
 
         const titleP = document.createElement('p');
-        titleP.className = 'text-xs font-semibold text-slate-200 truncate';
+        titleP.className = 'text-[13px] font-medium text-text-primary truncate';
         titleP.textContent = data.title || 'Alert';
         headerDiv.appendChild(titleP);
 
         const timeSpan = document.createElement('span');
-        timeSpan.className = 'text-xs text-slate-600 flex-shrink-0 font-mono';
+        timeSpan.className = 'text-xs text-text-muted flex-shrink-0 font-mono';
         timeSpan.textContent = ts;
         headerDiv.appendChild(timeSpan);
 
         contentDiv.appendChild(headerDiv);
 
         const msgP = document.createElement('p');
-        msgP.className = 'text-xs text-slate-400 mt-0.5 break-words';
+        msgP.className = 'text-xs text-text-secondary mt-0.5 break-words';
         msgP.textContent = data.message || '';
         contentDiv.appendChild(msgP);
 
@@ -356,14 +346,14 @@
         const el = document.getElementById('ws-badge');
         if (!el) return;
         const map = {
-            connected:    ['Connected',    'bg-green-500/10 text-green-400'],
-            reconnecting: ['Reconnecting', 'bg-amber-500/10 text-amber-400'],
-            disconnected: ['Disconnected', 'bg-red-500/10 text-red-400'],
-            connecting:   ['Connecting…',  'bg-slate-800 text-slate-400'],
+            connected:    ['Connected',    'bg-success-bg text-success-text border-success-border'],
+            reconnecting: ['Reconnecting', 'bg-warning-bg text-warning-text border-warning-border'],
+            disconnected: ['Disconnected', 'bg-danger-bg text-danger-text border-danger-border'],
+            connecting:   ['Connecting…',  'bg-surface-sunken text-text-muted border-border-default'],
         };
-        const [label, cls] = map[status] || ['—', 'bg-slate-800 text-slate-400'];
+        const [label, cls] = map[status] || ['—', 'bg-surface-sunken text-text-muted border-border-default'];
         el.textContent = label;
-        el.className   = `text-xs px-2 py-0.5 rounded-full font-mono ${cls}`;
+        el.className   = `text-xs px-2 py-0.5 rounded-full font-mono border ${cls}`;
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────────

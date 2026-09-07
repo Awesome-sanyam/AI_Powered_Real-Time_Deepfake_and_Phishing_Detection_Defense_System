@@ -11,7 +11,7 @@
     #threat-network {
         width: 100%;
         height: 100%;
-        background: var(--color-surface, #0b1120);  /* theme-aware: dark by default */
+        background: transparent;
         border-radius: 0.75rem;
     }
     /* Legend dot */
@@ -37,51 +37,51 @@
 <div class="flex flex-col h-full gap-4" style="min-height: calc(100vh - 5rem);">
 
     <!-- ─── Toolbar ──────────────────────────────────────────────────────────── -->
-    <div class="glass-panel rounded-xl border border-[var(--color-border)] px-4 py-3 flex flex-wrap items-center gap-3">
+    <div class="bg-surface-card rounded-xl border border-border-default px-4 py-3 flex flex-wrap items-center gap-3">
 
         <!-- Filter controls -->
-        <span class="text-xs text-slate-600 uppercase tracking-widest font-semibold mr-1">Filter</span>
+        <span class="text-[13px] font-medium text-text-primary mr-1">Filter</span>
 
         <button id="filter-all"
                 onclick="setFilter(null)"
-                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-300 text-xs hover:bg-slate-700 transition-colors">
+                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-surface-sunken border border-border-strong text-text-primary text-xs hover:bg-border-default transition-colors">
             All Nodes
         </button>
         <button id="filter-email"
                 onclick="setFilter('email')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
-            <i class="fa-solid fa-envelope mr-1 text-blue-400"></i>Email
+                class="filter-btn px-3 py-1.5 rounded-lg bg-surface-sunken border border-border-strong text-text-primary text-xs hover:bg-border-default transition-colors">
+            <i class="fa-solid fa-envelope mr-1 text-info-text"></i>Email
         </button>
         <button id="filter-domain"
                 onclick="setFilter('domain')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
-            <i class="fa-solid fa-globe mr-1 text-orange-400"></i>Domain
+                class="filter-btn px-3 py-1.5 rounded-lg bg-surface-sunken border border-border-strong text-text-primary text-xs hover:bg-border-default transition-colors">
+            <i class="fa-solid fa-globe mr-1 text-warning-text"></i>Domain
         </button>
         <button id="filter-ip"
                 onclick="setFilter('ip')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
-            <i class="fa-solid fa-network-wired mr-1 text-red-400"></i>IP
+                class="filter-btn px-3 py-1.5 rounded-lg bg-surface-sunken border border-border-strong text-text-primary text-xs hover:bg-border-default transition-colors">
+            <i class="fa-solid fa-network-wired mr-1 text-danger-text"></i>IP
         </button>
         <button id="filter-session"
                 onclick="setFilter('session')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
-            <i class="fa-solid fa-camera mr-1 text-violet-400"></i>Session
+                class="filter-btn px-3 py-1.5 rounded-lg bg-surface-sunken border border-border-strong text-text-primary text-xs hover:bg-border-default transition-colors">
+            <i class="fa-solid fa-camera mr-1 text-success-text"></i>Session
         </button>
 
         <!-- Divider -->
-        <div class="w-px h-5 bg-white/5 mx-1"></div>
+        <div class="w-px h-5 bg-border-default mx-1"></div>
 
         <!-- Actions -->
         <button onclick="viz && viz.refresh()"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-[var(--color-border)] text-slate-400 text-xs hover:bg-slate-700 transition-colors">
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-sunken border border-border-strong text-text-primary text-xs hover:bg-border-default transition-colors">
             <i class="fa-solid fa-rotate-right text-xs"></i> Refresh
         </button>
 
         <!-- Node count badge -->
-        <div class="ml-auto flex items-center gap-3 text-xs text-slate-600 font-mono">
-            <span><span id="node-count" class="text-slate-400">0</span> nodes</span>
-            <span><span id="edge-count" class="text-slate-400">0</span> edges</span>
-            <span id="refresh-countdown" class="text-slate-700">↻ 30s</span>
+        <div class="ml-auto flex items-center gap-3 text-xs text-text-muted font-mono">
+            <span><span id="node-count" class="text-text-primary">0</span> nodes</span>
+            <span><span id="edge-count" class="text-text-primary">0</span> edges</span>
+            <span id="refresh-countdown" class="text-text-secondary">↻ 30s</span>
         </div>
     </div>
 
@@ -89,27 +89,27 @@
     <div class="flex flex-1 gap-4 min-h-0">
 
         <!-- Graph canvas -->
-        <div class="flex-1 glass-panel rounded-xl border border-[var(--color-border)] overflow-hidden relative min-h-0">
+        <div class="flex-1 bg-surface-card rounded-xl border border-border-default overflow-hidden relative min-h-0">
             <div id="threat-network"></div>
 
             <!-- Legend overlay -->
-            <div class="absolute bottom-4 left-4 glass-panel rounded-lg border border-[var(--color-border)] p-3 space-y-2 pointer-events-none">
-                <p class="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-1">Legend</p>
-                <div class="flex items-center gap-2"><div class="legend-dot bg-blue-600"></div><span class="text-xs text-slate-400">Email</span></div>
-                <div class="flex items-center gap-2"><div class="legend-dot bg-orange-600"></div><span class="text-xs text-slate-400">Domain</span></div>
-                <div class="flex items-center gap-2"><div class="legend-dot bg-red-600"></div><span class="text-xs text-slate-400">IP Address</span></div>
-                <div class="flex items-center gap-2"><div class="legend-dot bg-violet-600"></div><span class="text-xs text-slate-400">Session</span></div>
-                <div class="flex items-center gap-2"><div class="legend-dot border-2 border-yellow-400 bg-transparent"></div><span class="text-xs text-slate-400">High Risk (>80%)</span></div>
+            <div class="absolute bottom-4 left-4 bg-surface-card rounded-lg border border-border-default p-3 space-y-2 pointer-events-none shadow-md">
+                <p class="text-[13px] font-medium text-text-primary mb-1">Legend</p>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-[#1d4ed8]"></div><span class="text-xs text-text-secondary">Email</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-[#b45309]"></div><span class="text-xs text-text-secondary">Domain</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-[#b91c1c]"></div><span class="text-xs text-text-secondary">IP Address</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot bg-[#047857]"></div><span class="text-xs text-text-secondary">Session</span></div>
+                <div class="flex items-center gap-2"><div class="legend-dot border-2 border-danger-border bg-transparent"></div><span class="text-xs text-text-secondary">High Risk (>70%)</span></div>
             </div>
 
             <!-- Empty state (shown when no data) -->
             <div id="graph-empty"
-                 class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none hidden">
-                <div class="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-                    <i class="fa-solid fa-circle-nodes text-slate-600 text-2xl"></i>
+                 class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none hidden bg-surface-card/80 backdrop-blur-sm">
+                <div class="w-16 h-16 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center">
+                    <i class="fa-solid fa-circle-nodes text-text-muted text-2xl"></i>
                 </div>
-                <p class="text-sm text-slate-600">No threat nodes yet</p>
-                <p class="text-xs text-slate-700">Run deepfake or phishing scans to populate the graph</p>
+                <p class="text-[13px] font-medium text-text-primary">No threat nodes yet</p>
+                <p class="text-xs text-text-muted">Run deepfake or phishing scans to populate the graph</p>
             </div>
         </div>
 
@@ -117,42 +117,42 @@
         <div class="w-72 flex-shrink-0 flex flex-col gap-3">
 
             <!-- Node detail panel -->
-            <div class="glass-panel rounded-xl border border-[var(--color-border)] p-4 flex-1">
-                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-circle-info text-blue-400 text-xs"></i>
+            <div class="bg-surface-card rounded-xl border border-border-default p-4 flex-1">
+                <h3 class="text-[13px] font-medium text-text-primary mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-info-text text-xs"></i>
                     Node Details
                 </h3>
                 <div id="node-details" class="sidebar-in">
-                    <p class="text-slate-600 text-sm">Click a node to inspect</p>
+                    <p class="text-text-muted text-sm">Click a node to inspect</p>
                 </div>
             </div>
 
             <!-- Graph stats -->
-            <div class="glass-panel rounded-xl border border-[var(--color-border)] p-4">
-                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
-                    <i class="fa-solid fa-chart-pie text-rose-400 text-xs mr-1"></i>
+            <div class="bg-surface-card rounded-xl border border-border-default p-4">
+                <h3 class="text-[13px] font-medium text-text-primary mb-3">
+                    <i class="fa-solid fa-chart-pie text-warning-border text-xs mr-1"></i>
                     Composition
                 </h3>
                 <div class="space-y-2" id="composition-stats">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Email</span>
-                        <span id="count-email"   class="text-slate-400 font-mono">0</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-info-text inline-block"></span> Email</span>
+                        <span id="count-email"   class="text-text-primary font-mono">0</span>
                     </div>
                     <div class="flex items-center justify-between text-xs">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span> Domain</span>
-                        <span id="count-domain"  class="text-slate-400 font-mono">0</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-warning-text inline-block"></span> Domain</span>
+                        <span id="count-domain"  class="text-text-primary font-mono">0</span>
                     </div>
                     <div class="flex items-center justify-between text-xs">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> IP</span>
-                        <span id="count-ip"      class="text-slate-400 font-mono">0</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-danger-text inline-block"></span> IP</span>
+                        <span id="count-ip"      class="text-text-primary font-mono">0</span>
                     </div>
                     <div class="flex items-center justify-between text-xs">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span> Session</span>
-                        <span id="count-session" class="text-slate-400 font-mono">0</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-success-text inline-block"></span> Session</span>
+                        <span id="count-session" class="text-text-primary font-mono">0</span>
                     </div>
-                    <div class="border-t border-[var(--color-border)] pt-2 flex items-center justify-between text-xs">
-                        <span class="text-slate-600">High Risk (&gt;70%)</span>
-                        <span id="count-high-risk" class="text-red-400 font-mono">0</span>
+                    <div class="border-t border-border-default pt-2 flex items-center justify-between text-xs">
+                        <span class="text-text-secondary">High Risk (&gt;70%)</span>
+                        <span id="count-high-risk" class="text-danger-text font-mono">0</span>
                     </div>
                 </div>
             </div>

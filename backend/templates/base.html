@@ -12,96 +12,64 @@
     <meta name="description" content="AI-Powered Real-Time Deepfake and Phishing Detection Defence System — Security Operations Centre">
     <title>{% block title %}DEFENCESYS — SOC Dashboard{% endblock %}</title>
 
-    <!-- Tailwind CSS with dark-mode class strategy -->
     <script>
-        tailwind.config = { darkMode: 'class' };
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: { page: '#F7F7F5', card: '#FFFFFF', sunken: '#F0EFEC' },
+                        border: { default: '#E4E3DE', strong: '#CFCDC5' },
+                        text: { primary: '#1C1C1A', secondary: '#5F5E5A', muted: '#8A8880' },
+                        danger: { bg: '#FCEBEB', border: '#E24B4A', text: '#791F1F' },
+                        warning: { bg: '#FAEEDA', border: '#EF9F27', text: '#633806' },
+                        success: { bg: '#EAF3DE', border: '#639922', text: '#27500A' },
+                        info: { bg: '#E6F1FB', border: '#378ADD', text: '#0C447C' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+                    }
+                }
+            }
+        };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- ── Theme init: runs BEFORE body renders to prevent flash ─────────────── -->
-    <script>
-    (function() {
-        const stored = localStorage.getItem('soc-theme');
-        // Phase 4: Default to Light Minimalist Theme if nothing stored
-        if (stored === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    })();
-    </script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-        /* ── CSS Custom Properties — Light & Dark ─────────────────────── */
-        :root {
-            --color-bg:       #f8fafc;
-            --color-surface:  #ffffff;
-            --color-border:   #e2e8f0;
-            --color-text:     #0f172a;
-            --color-muted:    #64748b;
-            --color-accent:   #3b82f6;
-            --color-danger:   #ef4444;
-            --color-warning:  #f59e0b;
-            --color-success:  #22c55e;
-            --scrollbar-bg:   #f1f5f9;
-            --scrollbar-thumb:#cbd5e1;
-        }
-        .dark {
-            --color-bg:       #0b1120;
-            --color-surface:  #111827;
-            --color-border:   rgba(255,255,255,0.07);
-            --color-text:     #f1f5f9;
-            --color-muted:    #64748b;
-            --scrollbar-bg:   #0b1120;
-            --scrollbar-thumb:#334155;
-        }
 
         * { box-sizing: border-box; }
 
         body {
-            background: var(--color-bg);
-            color: var(--color-text);
-            font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
-            transition: background 0.2s, color 0.2s;
+            background-color: #F7F7F5;
+            color: #1C1C1A;
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            line-height: 1.5;
         }
 
-        /* ── Glass panel — adapts to theme ───────────────────────────── */
-        .glass-panel {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            transition: background 0.2s, border-color 0.2s;
-        }
-        .dark .glass-panel {
-            background: rgba(17,24,39,0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+        h1, h2, h3, h4, h5, h6 {
+            line-height: 1.3;
         }
 
         /* ── Nav active highlight ─────────────────────────────────────── */
         .nav-active {
-            background: rgba(59,130,246,0.10);
-            color: #3b82f6;
-            border-left: 3px solid #3b82f6;
-        }
-        .dark .nav-active {
-            background: rgba(59,130,246,0.15);
-            color: #60a5fa;
+            color: #1C1C1A;
+            border-left: 2px solid #1C1C1A;
         }
 
         /* ── Animated status dot ──────────────────────────────────────── */
-        @keyframes pulse-ring {
-            0%   { box-shadow: 0 0 0 0   rgba(34,197,94,0.6); }
-            70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0);   }
-            100% { box-shadow: 0 0 0 0   rgba(34,197,94,0);   }
+        @keyframes pulse-live {
+            0%   { box-shadow: 0 0 0 0   rgba(99, 153, 34, 0.6); }
+            70%  { box-shadow: 0 0 0 4px rgba(99, 153, 34, 0);   }
+            100% { box-shadow: 0 0 0 0   rgba(99, 153, 34, 0);   }
         }
-        .dot-online       { background: var(--color-success); animation: pulse-ring 2s infinite; }
-        .dot-offline      { background: var(--color-danger);  }
-        .dot-reconnecting { background: var(--color-warning); }
+        .live-dot {
+            animation: pulse-live 1.5s infinite;
+        }
 
         /* ── Toast slide-in ───────────────────────────────────────────── */
         @keyframes slide-in {
@@ -110,96 +78,68 @@
         }
         .toast-enter { animation: slide-in 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
 
-        /* ── Metric card ──────────────────────────────────────────────── */
-        .metric-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        }
-        .dark .metric-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.45); }
-
         /* ── Scrollbar ────────────────────────────────────────────────── */
         ::-webkit-scrollbar       { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
-        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: #F0EFEC; }
+        ::-webkit-scrollbar-thumb { background: #CFCDC5; border-radius: 3px; }
 
-        /* ── Theme toggle button ──────────────────────────────────────── */
-        #theme-toggle {
-            transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        /* ── Hover/Focus transitions ─────────────────────────────── */
+        a, button, input {
+            transition: all 0.15s ease-out;
         }
-        #theme-toggle:hover { transform: rotate(20deg) scale(1.15); }
-
-        /* ── Sidebar text adapts to light ─────────────────────────────── */
-        .nav-link {
-            color: var(--color-muted);
-            transition: color 0.15s, background 0.15s;
-        }
-        .nav-link:hover { color: var(--color-text); background: rgba(0,0,0,0.04); }
-        .dark .nav-link:hover { background: rgba(255,255,255,0.05); }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="h-screen flex overflow-hidden">
+<body class="h-screen flex overflow-hidden text-sm relative bg-surface-page text-text-primary">
 
     <!-- ═══════════════════════════════════════════════════════════════ SIDEBAR -->
-    <aside class="w-64 glass-panel flex flex-col h-full flex-shrink-0" style="border-right:1px solid var(--color-border);">
-
+    <aside class="w-[220px] flex-shrink-0 flex flex-col z-20 bg-surface-card border-r border-border-default">
+        
         <!-- Logo -->
-        <div class="px-6 py-5 flex items-center gap-3" style="border-bottom:1px solid var(--color-border);">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.25);">
-                <i class="fa-solid fa-shield-halved text-blue-500 text-base"></i>
-            </div>
-            <div>
-                <h1 class="text-sm font-bold tracking-widest" style="color:var(--color-text);">DEFENCE<span class="text-blue-500">SYS</span></h1>
-                <p class="text-xs" style="color:var(--color-muted);">AI Security Platform</p>
-            </div>
+        <div class="h-14 flex items-center px-4 shrink-0">
+            <i class="fa-solid fa-shield-halved text-info-border text-lg mr-2"></i>
+            <span class="font-bold tracking-tight text-text-primary">DEFENCESYS</span>
         </div>
 
         <!-- Navigation -->
-        <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
-            <p class="px-3 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest" style="color:var(--color-muted); opacity:0.7;">Operations</p>
-
-            <a href="{% url 'dashboard:index' %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
-                      {% if request.resolver_match.app_name == 'dashboard' %}nav-active{% endif %}">
-                <i class="fa-solid fa-chart-line w-4 text-center text-blue-500"></i>
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <a href="{% url 'dashboard:index' %}" 
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'dashboard' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
+                <i class="fa-solid fa-chart-line w-4 text-center text-text-muted"></i>
                 <span>SOC Overview</span>
             </a>
 
             <a href="{% url 'deepfake:monitor' %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
-                      {% if request.resolver_match.app_name == 'deepfake' %}nav-active{% endif %}">
-                <i class="fa-solid fa-video w-4 text-center text-violet-500"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'deepfake' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
+                <i class="fa-solid fa-video w-4 text-center text-text-muted"></i>
                 <span>Deepfake Monitor</span>
             </a>
 
             <a href="{% url 'phishing:scanner' %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
-                      {% if request.resolver_match.app_name == 'phishing' %}nav-active{% endif %}">
-                <i class="fa-solid fa-envelope-open-text w-4 text-center text-amber-500"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'phishing' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
+                <i class="fa-solid fa-envelope-open-text w-4 text-center text-text-muted"></i>
                 <span>Phishing Scanner</span>
             </a>
 
             <a href="{% url 'threat_graph:view' %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
-                      {% if request.resolver_match.app_name == 'threat_graph' %}nav-active{% endif %}">
-                <i class="fa-solid fa-circle-nodes w-4 text-center text-rose-500"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'threat_graph' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
+                <i class="fa-solid fa-circle-nodes w-4 text-center text-text-muted"></i>
                 <span>Threat Graph</span>
             </a>
         </nav>
 
         <!-- Footer status -->
-        <div class="p-4 space-y-3" style="border-top:1px solid var(--color-border);">
+        <div class="p-4 space-y-3 border-t border-border-default">
             <!-- Live WS status -->
             <div class="flex items-center gap-2.5 px-2">
                 <div id="ws-status-dot" class="w-2 h-2 rounded-full dot-offline flex-shrink-0"></div>
-                <span id="ws-status-text" class="text-xs" style="color:var(--color-muted);">Connecting…</span>
+                <span id="ws-status-text" class="text-xs text-text-muted">Connecting…</span>
             </div>
             <!-- AI engine status -->
             <div id="ai-engine-status" class="flex items-center gap-2.5 px-2">
-                <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-muted); opacity:0.4;"></div>
-                <span class="text-xs" style="color:var(--color-muted);">AI Engine</span>
+                <div class="w-2 h-2 rounded-full flex-shrink-0 bg-text-muted opacity-40"></div>
+                <span class="text-xs text-text-muted">AI Engine</span>
             </div>
         </div>
     </aside>
@@ -208,53 +148,41 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
 
         <!-- Top bar -->
-        <header class="h-14 glass-panel flex items-center justify-between px-6 z-10 flex-shrink-0"
-                style="border-bottom:1px solid var(--color-border);">
-            <h2 class="text-base font-semibold" style="color:var(--color-text);">{% block header_title %}Overview{% endblock %}</h2>
+        <header class="h-[64px] bg-surface-card border-b border-border-default flex items-center justify-between px-6 z-10 flex-shrink-0">
+            <h1 class="text-[22px] font-medium text-text-primary">{% block header_title %}Overview{% endblock %}</h1>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-4">
+                <!-- Search (outline style) -->
+                <div class="relative hidden md:block">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm"></i>
+                    <input type="text" placeholder="Search logs, alerts..." class="h-[36px] w-64 pl-9 pr-3 rounded-lg border border-border-default bg-surface-card text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-info-border focus:ring-1 focus:ring-info-border transition-colors">
+                </div>
+
                 <!-- Live clock -->
-                <span id="topbar-time" class="text-xs font-mono hidden sm:block" style="color:var(--color-muted);"></span>
+                <span id="topbar-time" class="text-caption font-mono hidden sm:block text-text-muted"></span>
 
                 <!-- MPS status pill -->
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                      style="background:rgba(59,130,246,0.08); color:#3b82f6; border:1px solid rgba(59,130,246,0.2);">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption bg-info-bg text-info-text border border-info-border">
+                    <span class="w-1.5 h-1.5 rounded-full bg-info-text live-dot inline-block"></span>
                     MPS Active
                 </span>
 
                 <!-- Alert bell -->
-                <button id="alert-bell" class="relative p-2 rounded-lg transition-colors"
-                        style="color:var(--color-muted);"
-                        onmouseover="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--color-text')"
-                        onmouseout="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--color-muted')">
+                <button id="alert-bell" class="relative p-2 rounded-lg text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border focus:ring-offset-2 focus:ring-offset-surface-card" aria-label="Notifications">
                     <i class="fa-solid fa-bell text-sm"></i>
-                    <span id="alert-badge" class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full hidden"></span>
-                </button>
-
-                <!-- Theme toggle (Sun = light, Moon = dark) -->
-                <button id="theme-toggle"
-                        onclick="toggleTheme()"
-                        class="p-2 rounded-lg transition-colors"
-                        title="Toggle Light / Dark mode"
-                        style="color:var(--color-muted);"
-                        aria-label="Toggle theme">
-                    <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+                    <!-- Red dot only -->
+                    <span id="alert-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-danger-border rounded-full hidden border-2 border-surface-card"></span>
                 </button>
 
                 <!-- User badge + logout -->
                 {% if user.is_authenticated %}
-                <div class="flex items-center gap-2 pl-2" style="border-left:1px solid var(--color-border);">
-                    <div class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                <div class="flex items-center gap-3 pl-4 border-l border-border-default">
+                    <div class="w-8 h-8 rounded-full bg-surface-sunken flex items-center justify-center text-text-primary text-sm font-medium flex-shrink-0 border border-border-strong">
                         {{ user.username|first|upper }}
                     </div>
-                    <span class="text-xs font-medium hidden md:block" style="color:var(--color-text);">{{ user.username }}</span>
-                    <form method="POST" action="{% url 'auth:logout' %}" style="display:inline;">
+                    <form method="POST" action="{% url 'auth:logout' %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="p-1 rounded transition-colors text-xs"
-                                style="color:var(--color-muted);" title="Sign out"
-                                onmouseover="this.style.color='#ef4444'"
-                                onmouseout="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--color-muted')">
+                        <button type="submit" class="p-1 rounded text-text-muted hover:text-danger-text transition-colors focus:outline-none focus:ring-2 focus:ring-info-border" title="Sign out" aria-label="Sign out">
                             <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         </button>
                     </form>
@@ -263,9 +191,11 @@
             </div>
         </header>
 
-        <!-- Page content -->
-        <div class="flex-1 overflow-auto p-5">
-            {% block content %}{% endblock %}
+        <!-- Page content container -->
+        <div class="flex-1 overflow-auto bg-surface-page">
+            <div class="max-w-[1440px] mx-auto p-[24px]">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </main>
 
@@ -276,28 +206,6 @@
     <script src="{% static 'js/ws_client.js' %}"></script>
 
     <script>
-    // ── Theme toggle ──────────────────────────────────────────────────────────
-    function toggleTheme() {
-        const html = document.documentElement;
-        const isDark = html.classList.contains('dark');
-        if (isDark) {
-            html.classList.remove('dark');
-            localStorage.setItem('soc-theme', 'light');
-            document.getElementById('theme-icon').className = 'fa-solid fa-sun text-sm';
-        } else {
-            html.classList.add('dark');
-            localStorage.setItem('soc-theme', 'dark');
-            document.getElementById('theme-icon').className = 'fa-solid fa-moon text-sm';
-        }
-    }
-
-    // ── Set correct icon on load ──────────────────────────────────────────────
-    (function() {
-        const isDark = document.documentElement.classList.contains('dark');
-        const icon   = document.getElementById('theme-icon');
-        if (icon) icon.className = isDark ? 'fa-solid fa-moon text-sm' : 'fa-solid fa-sun text-sm';
-    })();
-
     // ── Topbar clock ──────────────────────────────────────────────────────────
     (function() {
         const el = document.getElementById('topbar-time');
@@ -378,7 +286,7 @@
         const [borderColor, iconClass, iconColor] = typeMap[type] || typeMap.info;
 
         const toast = document.createElement('div');
-        toast.className = `glass-panel rounded-lg border-l-4 p-3.5 pointer-events-auto shadow-xl toast-enter`;
+        toast.className = `bg-surface-card border border-border-default border-l-[3px] rounded-xl p-4 shadow-sm pointer-events-auto toast-enter`;
         toast.style.borderLeftColor = iconColor;
 
         const flexContainer = document.createElement('div');
@@ -393,24 +301,21 @@
         textContainer.className = 'min-w-0';
 
         const titleEl = document.createElement('p');
-        titleEl.className = 'text-sm font-semibold leading-tight';
-        titleEl.style.color = 'var(--color-text)';
+        titleEl.className = 'text-sm font-medium text-text-primary leading-tight';
         titleEl.textContent = title;
         textContainer.appendChild(titleEl);
 
         const msgEl = document.createElement('p');
-        msgEl.className = 'text-xs mt-0.5 break-words';
-        msgEl.style.color = 'var(--color-muted)';
+        msgEl.className = 'text-xs text-text-muted mt-0.5 break-words';
         msgEl.textContent = message;
         textContainer.appendChild(msgEl);
 
         flexContainer.appendChild(textContainer);
 
         const closeBtn = document.createElement('button');
-        closeBtn.className = 'ml-auto flex-shrink-0 text-xs';
-        closeBtn.style.color = 'var(--color-muted)';
+        closeBtn.className = 'ml-auto flex-shrink-0 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border rounded p-1';
         const closeIcon = document.createElement('i');
-        closeIcon.className = 'fa-solid fa-xmark';
+        closeIcon.className = 'fa-solid fa-xmark text-sm';
         closeBtn.appendChild(closeIcon); // safe, static html
         closeBtn.onclick = () => toast.remove();
         flexContainer.appendChild(closeBtn);

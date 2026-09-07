@@ -60,59 +60,60 @@
     <!-- ── Left: Input form ──────────────────────────────────────────────────── -->
     <div class="flex-1 flex flex-col gap-4 min-w-0">
 
-        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-1">Analyse suspicious content</h2>
-            <p class="text-xs text-slate-500 mb-5">Paste an email body, headers, or URL. The AI engine will classify intent, check SPF/DKIM, and compute URL entropy.</p>
+        <div class="bg-surface-card rounded-xl border border-border-default p-5">
+            <h2 class="text-sm font-semibold text-text-primary mb-1">Analyse suspicious content</h2>
+            <p class="text-xs text-text-secondary mb-5">Paste an email body, headers, or URL. The AI engine will classify intent, check SPF/DKIM, and compute URL entropy.</p>
 
             <form id="scan-form" class="space-y-4" novalidate>
 
                 <!-- Email body -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-                        <i class="fa-solid fa-envelope text-amber-400 mr-1"></i> Email Body
+                    <label class="block text-[13px] font-medium text-text-primary mb-1.5">
+                        <i class="fa-solid fa-envelope text-warning-text mr-1"></i> Email Body
                     </label>
                     <textarea id="input-content"
                               rows="8"
                               placeholder="Paste the full email body or message text here…"
+                              class="bg-surface-sunken border-border-strong text-text-primary focus:border-info-border"
                               required></textarea>
                 </div>
 
                 <!-- Suspicious URL -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-                        <i class="fa-solid fa-link text-blue-400 mr-1"></i> Suspicious URL <span class="text-slate-600 normal-case font-normal">(optional)</span>
+                    <label class="block text-[13px] font-medium text-text-primary mb-1.5">
+                        <i class="fa-solid fa-link text-info-text mr-1"></i> Suspicious URL <span class="text-text-muted font-normal">(optional)</span>
                     </label>
                     <input id="input-url"
                            type="text"
                            placeholder="https://suspicious-domain.tk/verify/account"
-                           class="w-full rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500/50 transition-colors"
-                           style="background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text);">
+                           class="w-full rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-info-border bg-surface-sunken border border-border-strong text-text-primary transition-colors">
                 </div>
 
                 <!-- Email headers -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-                        <i class="fa-solid fa-code text-violet-400 mr-1"></i> Email Headers <span class="text-slate-600 normal-case font-normal">(JSON, optional)</span>
+                    <label class="block text-[13px] font-medium text-text-primary mb-1.5">
+                        <i class="fa-solid fa-code text-success-text mr-1"></i> Email Headers <span class="text-text-muted font-normal">(JSON, optional)</span>
                     </label>
                     <textarea id="input-headers"
                               rows="4"
-                              placeholder='{"From": "PayPal <noreply@evil.com>", "Received-SPF": "fail", "Reply-To": "attacker@phish.tk"}'></textarea>
+                              placeholder='{"From": "PayPal <noreply@evil.com>", "Received-SPF": "fail", "Reply-To": "attacker@phish.tk"}'
+                              class="bg-surface-sunken border-border-strong text-text-primary focus:border-info-border"></textarea>
                 </div>
 
                 <!-- Submit -->
                 <div class="flex items-center gap-3 pt-1">
                     <button id="btn-scan"
                             type="submit"
-                            class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-colors">
+                            class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-warning-bg border border-warning-border hover:bg-warning-border/50 text-warning-text text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-warning-border">
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         Scan for Phishing
                     </button>
                     <button id="btn-clear"
                             type="button"
-                            class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm transition-colors">
+                            class="px-4 py-2.5 rounded-lg bg-surface-sunken border border-border-strong hover:bg-border-default text-text-primary text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-info-border">
                         Clear
                     </button>
-                    <div id="scan-spinner" class="hidden flex items-center gap-2 text-slate-500 text-xs">
+                    <div id="scan-spinner" class="hidden flex items-center gap-2 text-text-muted text-xs">
                         <i class="fa-solid fa-circle-notch spinner"></i> Analysing…
                     </div>
                 </div>
@@ -120,19 +121,19 @@
         </div>
 
         <!-- Sample presets -->
-        <div class="glass-panel rounded-xl border border-[var(--color-border)] p-4">
-            <p class="text-xs text-slate-600 mb-3 uppercase tracking-widest font-semibold">Quick test samples</p>
+        <div class="bg-surface-card rounded-xl border border-border-default p-4">
+            <p class="text-[13px] font-medium text-text-primary mb-3">Quick test samples</p>
             <div class="flex flex-wrap gap-2">
                 <button onclick="loadSample('phishing')"
-                        class="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                        class="px-3 py-1.5 rounded-lg bg-danger-bg border border-danger-border text-danger-text text-xs hover:bg-danger-border/50 transition-colors focus:outline-none focus:ring-2 focus:ring-danger-border">
                     <i class="fa-solid fa-fish-fins mr-1"></i> Phishing Email
                 </button>
                 <button onclick="loadSample('safe')"
-                        class="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs hover:bg-green-500/20 transition-colors">
+                        class="px-3 py-1.5 rounded-lg bg-success-bg border border-success-border text-success-text text-xs hover:bg-success-border/50 transition-colors focus:outline-none focus:ring-2 focus:ring-success-border">
                     <i class="fa-solid fa-circle-check mr-1"></i> Legitimate Email
                 </button>
                 <button onclick="loadSample('url')"
-                        class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs hover:bg-amber-500/20 transition-colors">
+                        class="px-3 py-1.5 rounded-lg bg-warning-bg border border-warning-border text-warning-text text-xs hover:bg-warning-border/50 transition-colors focus:outline-none focus:ring-2 focus:ring-warning-border">
                     <i class="fa-solid fa-link mr-1"></i> Suspicious URL
                 </button>
             </div>
@@ -143,80 +144,80 @@
     <div class="w-full xl:w-96 flex-shrink-0 space-y-4">
 
         <!-- Waiting state -->
-        <div id="results-placeholder" class="glass-panel rounded-xl border border-[var(--color-border)] p-8 flex flex-col items-center justify-center text-center gap-3">
-            <div class="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-                <i class="fa-solid fa-magnifying-glass text-slate-600 text-xl"></i>
+        <div id="results-placeholder" class="bg-surface-card rounded-xl border border-border-default p-8 flex flex-col items-center justify-center text-center gap-3">
+            <div class="w-14 h-14 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center">
+                <i class="fa-solid fa-magnifying-glass text-text-muted text-xl"></i>
             </div>
-            <p class="text-sm text-slate-600">Submit content to see analysis results</p>
+            <p class="text-[13px] font-medium text-text-primary">Submit content to see analysis results</p>
         </div>
 
         <!-- Results (hidden until scan completes) -->
         <div id="results-panel" class="hidden space-y-4 result-in">
 
             <!-- Main verdict card -->
-            <div id="verdict-card" class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
+            <div id="verdict-card" class="bg-surface-card rounded-xl border border-border-default p-5">
                 <div class="flex items-center gap-4 mb-4">
                     <div id="res-icon"
-                         class="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
-                        <i class="fa-solid fa-question text-slate-600 text-xl"></i>
+                         class="w-12 h-12 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-question text-text-muted text-xl"></i>
                     </div>
                     <div>
-                        <p id="res-verdict"   class="text-lg font-bold text-slate-400">—</p>
-                        <p id="res-risk-level" class="text-xs uppercase tracking-widest text-slate-600">—</p>
+                        <p id="res-verdict"   class="text-lg font-bold text-text-primary">—</p>
+                        <p id="res-risk-level" class="text-[11px] font-medium text-text-secondary uppercase tracking-wider">—</p>
                     </div>
                     <div class="ml-auto text-right">
-                        <p id="res-conf-pct" class="text-2xl font-bold text-white font-mono">—</p>
-                        <p class="text-xs text-slate-500">confidence</p>
+                        <p id="res-conf-pct" class="text-2xl font-bold text-text-primary font-mono">—</p>
+                        <p class="text-[11px] text-text-muted uppercase tracking-wider">confidence</p>
                     </div>
                 </div>
 
                 <!-- Confidence bar -->
-                <div class="h-2 bg-slate-800 rounded-full overflow-hidden mb-4">
-                    <div id="res-conf-bar" class="h-full bg-amber-500 rounded-full conf-fill" style="width:0%"></div>
+                <div class="h-2 bg-surface-sunken rounded-full overflow-hidden mb-4 border border-border-default">
+                    <div id="res-conf-bar" class="h-full bg-border-strong rounded-full conf-fill" style="width:0%"></div>
                 </div>
 
                 <!-- LLM Explanation -->
-                <div class="bg-slate-900/60 rounded-lg p-3 text-xs text-slate-400 leading-relaxed border border-[var(--color-border)]">
-                    <p class="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-1">LLM Intent Analysis</p>
+                <div class="bg-surface-sunken rounded-lg p-3 text-xs text-text-secondary leading-relaxed border border-border-default">
+                    <p class="text-[11px] font-medium text-text-primary uppercase tracking-wider mb-1">LLM Intent Analysis</p>
                     <p id="res-explanation">—</p>
                 </div>
             </div>
 
             <!-- Signals -->
-            <div class="glass-panel rounded-xl border border-[var(--color-border)] p-5">
-                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
-                    <i class="fa-solid fa-flag text-amber-400 mr-1"></i> Detection Signals
+            <div class="bg-surface-card rounded-xl border border-border-default p-5">
+                <h3 class="text-[13px] font-medium text-text-primary mb-3">
+                    <i class="fa-solid fa-flag text-warning-border mr-1"></i> Detection Signals
                 </h3>
                 <div id="res-signals" class="flex flex-wrap gap-2">
-                    <span class="text-xs text-slate-600">None detected</span>
+                    <span class="text-xs text-text-muted">None detected</span>
                 </div>
             </div>
 
             <!-- URL forensics -->
-            <div id="url-forensics-panel" class="glass-panel rounded-xl border border-[var(--color-border)] p-5 hidden">
-                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
-                    <i class="fa-solid fa-link text-blue-400 mr-1"></i> URL Forensics
+            <div id="url-forensics-panel" class="bg-surface-card rounded-xl border border-border-default p-5 hidden">
+                <h3 class="text-[13px] font-medium text-text-primary mb-3">
+                    <i class="fa-solid fa-link text-info-border mr-1"></i> URL Forensics
                 </h3>
                 <div class="space-y-2 text-xs">
                     <div class="flex justify-between">
-                        <span class="text-slate-500">URL</span>
-                        <span id="url-val" class="text-slate-300 font-mono break-all text-right max-w-52 truncate">—</span>
+                        <span class="text-text-secondary">URL</span>
+                        <span id="url-val" class="text-text-primary font-mono break-all text-right max-w-52 truncate">—</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Entropy Score</span>
-                        <span id="url-entropy" class="text-slate-300 font-mono">—</span>
+                        <span class="text-text-secondary">Entropy Score</span>
+                        <span id="url-entropy" class="text-text-primary font-mono">—</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Risk Score</span>
-                        <span id="url-risk" class="font-mono">—</span>
+                        <span class="text-text-secondary">Risk Score</span>
+                        <span id="url-risk" class="font-mono text-text-primary">—</span>
                     </div>
                 </div>
             </div>
 
             <!-- Header validation -->
-            <div id="header-panel" class="glass-panel rounded-xl border border-[var(--color-border)] p-5 hidden">
-                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">
-                    <i class="fa-solid fa-shield text-violet-400 mr-1"></i> Header Validation
+            <div id="header-panel" class="bg-surface-card rounded-xl border border-border-default p-5 hidden">
+                <h3 class="text-[13px] font-medium text-text-primary mb-3">
+                    <i class="fa-solid fa-shield text-success-border mr-1"></i> Header Validation
                 </h3>
                 <div class="space-y-2 text-xs" id="header-checks">
                     <!-- injected by JS -->
@@ -224,19 +225,19 @@
             </div>
 
             <!-- ECDSA signature -->
-            <div id="ecdsa-card" class="glass-panel rounded-xl border border-[var(--color-border)] p-5 hidden">
-                <h3 class="text-xs uppercase tracking-widest text-slate-600 mb-3">Verdict Signature</h3>
-                <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <i class="fa-solid fa-shield-check text-blue-400 text-base"></i>
+            <div id="ecdsa-card" class="bg-surface-card rounded-xl border border-border-default p-5 hidden">
+                <h3 class="text-[13px] font-medium text-text-primary mb-3">Verdict Signature</h3>
+                <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-success-bg border border-success-border">
+                    <i class="fa-solid fa-shield-check text-success-text text-base"></i>
                     <div>
-                        <p class="text-xs font-semibold text-blue-300">ECDSA P-256 VERIFIED</p>
-                        <p id="ecdsa-sig" class="text-xs text-slate-500 font-mono mt-0.5 break-all"></p>
+                        <p class="text-xs font-semibold text-success-text">ECDSA P-256 VERIFIED</p>
+                        <p id="ecdsa-sig" class="text-[11px] text-text-secondary font-mono mt-0.5 break-all"></p>
                     </div>
                 </div>
             </div>
 
             <!-- Session info -->
-            <div class="text-xs text-slate-700 font-mono px-1">
+            <div class="text-[11px] text-text-muted font-mono px-1">
                 Session: <span id="res-session-id">—</span>
             </div>
         </div>
@@ -376,23 +377,23 @@ Senior Analyst, Finance`,
         const confBar = document.getElementById('res-conf-bar');
 
         if (isPhishing) {
-            icon.className    = 'w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center flex-shrink-0';
+            icon.className    = 'w-12 h-12 rounded-full bg-danger-bg border border-danger-border flex items-center justify-center flex-shrink-0';
             icon.innerHTML = '';
             const i = document.createElement('i');
-            i.className = 'fa-solid fa-fish-fins text-red-400 text-xl';
+            i.className = 'fa-solid fa-fish-fins text-danger-text text-xl';
             icon.appendChild(i);
             verdict.textContent = 'PHISHING DETECTED';
-            verdict.className = 'text-lg font-bold text-red-400';
-            confBar.className = 'h-full bg-red-500 rounded-full conf-fill';
+            verdict.className = 'text-lg font-bold text-danger-text';
+            confBar.className = 'h-full bg-danger-text rounded-full conf-fill';
         } else {
-            icon.className    = 'w-12 h-12 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0';
+            icon.className    = 'w-12 h-12 rounded-full bg-success-bg border border-success-border flex items-center justify-center flex-shrink-0';
             icon.innerHTML = '';
             const i = document.createElement('i');
-            i.className = 'fa-solid fa-circle-check text-green-400 text-xl';
+            i.className = 'fa-solid fa-circle-check text-success-text text-xl';
             icon.appendChild(i);
             verdict.textContent = 'CLEAN / SAFE';
-            verdict.className = 'text-lg font-bold text-green-400';
-            confBar.className = 'h-full bg-green-500 rounded-full conf-fill';
+            verdict.className = 'text-lg font-bold text-success-text';
+            confBar.className = 'h-full bg-success-text rounded-full conf-fill';
         }
 
         document.getElementById('res-risk-level').textContent  = riskLevel || '—';
@@ -410,9 +411,9 @@ Senior Analyst, Finance`,
                 // XSS-safe: build elements via DOM API, not innerHTML string injection
                 const isUrlSig = sig.startsWith('url-') || sig.startsWith('entropy') || sig.startsWith('high-entropy');
                 const isHdrSig = sig.startsWith('spf') || sig.startsWith('dkim') || sig.startsWith('dmarc') || sig.startsWith('reply-to') || sig.startsWith('missing');
-                const colorCls = isUrlSig ? 'border-blue-500/30 bg-blue-500/5 text-blue-400'
-                               : isHdrSig ? 'border-violet-500/30 bg-violet-500/5 text-violet-400'
-                               :            'border-amber-500/30 bg-amber-500/5 text-amber-400';
+                const colorCls = isUrlSig ? 'border-info-border bg-info-bg text-info-text'
+                               : isHdrSig ? 'border-success-border bg-success-bg text-success-text'
+                               :            'border-warning-border bg-warning-bg text-warning-text';
                 const span = document.createElement('span');
                 span.className = `signal-pill ${colorCls}`;
                 const icon = document.createElement('i');
@@ -424,7 +425,7 @@ Senior Analyst, Finance`,
         } else {
             signalsEl.innerHTML = '';
             const span = document.createElement('span');
-            span.className = 'text-xs text-slate-600';
+            span.className = 'text-xs text-text-muted';
             span.textContent = 'No threat signals detected';
             signalsEl.appendChild(span);
         }
@@ -439,7 +440,7 @@ Senior Analyst, Finance`,
             const riskPct = isPhishing ? `${confPct}%` : '—';
             const riskEl  = document.getElementById('url-risk');
             riskEl.textContent = riskPct;
-            riskEl.className   = `font-mono ${isPhishing ? 'text-red-400' : 'text-green-400'}`;
+            riskEl.className   = `font-mono ${isPhishing ? 'text-danger-text' : 'text-success-text'}`;
         }
 
         // Header panel
@@ -458,15 +459,15 @@ Senior Analyst, Finance`,
             hdrChecks.innerHTML = '';
             checks.forEach(c => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center justify-between py-1 border-b border-white/3 last:border-0';
+                row.className = 'flex items-center justify-between py-1 border-b border-border-default last:border-0';
                 
                 const label = document.createElement('span');
-                label.className = 'text-slate-500';
+                label.className = 'text-text-secondary';
                 label.textContent = c.label;
                 row.appendChild(label);
                 
                 const status = document.createElement('span');
-                status.className = c.pass ? 'text-green-400 font-mono' : 'text-red-400 font-mono';
+                status.className = c.pass ? 'text-success-text font-mono' : 'text-danger-text font-mono';
                 
                 const icon = document.createElement('i');
                 icon.className = c.pass ? 'fa-solid fa-circle-check mr-1' : 'fa-solid fa-circle-xmark mr-1';
