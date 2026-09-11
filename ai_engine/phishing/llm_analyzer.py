@@ -15,6 +15,7 @@ from typing import Optional
 
 from ai_engine.identity.ecdsa_service import ECDSAService
 from ai_engine.phishing.url_forensics import URLForensics
+from ai_engine.phishing.header_analyzer import analyze_headers as _analyze_headers_full
 
 logger = logging.getLogger(__name__)
 
@@ -98,20 +99,25 @@ class PhishingAnalyzer:
             url_signals = url_result.get("signals", [])
             url_risk_score = url_result.get("risk_score", 0.0)
 
-        # 2. Header analysis
-        header_signals = []
+        # 2. Header analysis (full module with SPF/DKIM/DMARC/display-name checks)
+        header_signals: list[str] = []
+        header_risk_score: float = 0.0
         if headers:
-            header_signals = self._analyze_headers(headers)
+            hdr_result = _analyze_headers_full(headers)
+            header_signals = hdr_result.get("signals", [])
+            header_risk_score = hdr_result.get("risk_score", 0.0)
 
         # 3. LLM intent analysis
         llm_result = self._run_llm(content)
         llm_confidence = llm_result.get("confidence", 0.0)
         llm_signals = llm_result.get("signals", [])
 
-        # 4. Aggregate
+        # 4. Aggregate — weights: URL 35%, Header 15%, LLM 50%
         all_signals = url_signals + header_signals + llm_signals
         total_confidence = min(
-            (url_risk_score * 0.35) + (len(header_signals) * 0.1) + (llm_confidence * 0.55),
+            (url_risk_score * 0.35)
+            + (header_risk_score * 0.15)
+            + (llm_confidence * 0.50),
             1.0,
         )
         is_phishing = total_confidence > 0.5
@@ -132,16 +138,4 @@ class PhishingAnalyzer:
             "public_key_pem": public_key_pem,
         }
 
-    @staticmethod
-    def _analyze_headers(headers: dict) -> list[str]:
-        signals = []
-        from_addr = headers.get("From", "")
-        reply_to = headers.get("Reply-To", "")
-        if reply_to and reply_to != from_addr:
-            signals.append("reply-to-from-mismatch")
-        if not headers.get("DKIM-Signature"):
-            signals.append("missing-dkim")
-        spf = headers.get("Received-SPF", "")
-        if "fail" in spf.lower():
-            signals.append("spf-fail")
-        return signals
+    # _analyze_headers() replaced by ai_engine.phishing.header_analyzer.analyze_headers
