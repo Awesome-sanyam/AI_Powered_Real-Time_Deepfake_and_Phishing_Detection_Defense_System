@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════════════════════════
 #  scripts/run_dev.sh — DEFENCESYS Development Server Launcher
-#  Starts Daphne (Django/Channels) + Celery worker concurrently.
+#  Starts Daphne (Django/Channels) + Celery worker + AI Engine (FastAPI).
 #
 #  Usage:
-#    cd /path/to/AI\ Deepfake\ and\ Phishing\ Defence\ System
+#    cd /path/to/"AI Deepfake and Phishing Defence System"
 #    bash scripts/run_dev.sh
 #
 #  Prerequisites:
-#    - backend/.venv must exist (source it automatically)
-#    - OrbStack / Docker running: docker compose up -d
-#    - POSTGRES_HOST is set to localhost (done in this script)
+#    - backend/.venv must exist
+#    - OrbStack / Docker must be running
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -47,6 +46,25 @@ export NEO4J_URI=bolt://localhost:7687
 export NEO4J_USER=neo4j
 export NEO4J_PASSWORD=neo4j_password
 export DJANGO_SETTINGS_MODULE=config.settings.development
+export AI_ENGINE_BASE_URL=http://localhost:8001
+
+# Prevent Python from buffering stdout/stderr
+export PYTHONUNBUFFERED=1
+
+# Optimize Apple Silicon MPS PyTorch memory allocation
+# Leaves ~30% unified memory for other services (Neo4j, Postgres, Daphne)
+export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.7
+
+# ── GGUF model path — absolute so uvicorn subprocess sees it ─────────────────
+export GGUF_MODEL_PATH="$REPO_ROOT/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+
+if [[ ! -f "$GGUF_MODEL_PATH" ]]; then
+    warn "GGUF model not found at $GGUF_MODEL_PATH"
+    warn "AI Engine will start in heuristics-only mode (no LLM inference)"
+    warn "To download: bash scripts/download_models.sh"
+else
+    ok "GGUF model found: $(basename "$GGUF_MODEL_PATH")"
+fi
 
 # ── Ensure Docker services are running ───────────────────────────────────────
 info "Checking Docker services..."
@@ -69,16 +87,39 @@ ok "Migrations done"
 mkdir -p "$REPO_ROOT/logs"
 
 # ── Cleanup handler ───────────────────────────────────────────────────────────
+AI_ENGINE_PID=""
+CELERY_PID=""
+DAPHNE_PID=""
+
 cleanup() {
     info "Shutting down all services..."
-    kill "$DAPHNE_PID" "$CELERY_PID" 2>/dev/null || true
-    wait "$DAPHNE_PID" "$CELERY_PID" 2>/dev/null || true
+    [[ -n "$AI_ENGINE_PID" ]] && kill "$AI_ENGINE_PID" 2>/dev/null || true
+    [[ -n "$CELERY_PID"    ]] && kill "$CELERY_PID"    2>/dev/null || true
+    [[ -n "$DAPHNE_PID"    ]] && kill "$DAPHNE_PID"    2>/dev/null || true
+    wait 2>/dev/null || true
     info "All services stopped."
 }
 trap cleanup EXIT INT TERM
 
+# ── Start AI Engine (FastAPI/uvicorn on port 8001) ────────────────────────────
+# CRITICAL: Must start from REPO_ROOT so dlib model relative paths resolve.
+info "Starting AI Engine on http://0.0.0.0:8001 ..."
+cd "$REPO_ROOT"
+uvicorn ai_engine.server:app \
+    --host 0.0.0.0 \
+    --port 8001 \
+    --workers 1 \
+    --log-level info \
+    > "$REPO_ROOT/logs/ai_engine.log" 2>&1 &
+AI_ENGINE_PID=$!
+ok "AI Engine PID=$AI_ENGINE_PID  ->  logs/ai_engine.log"
+
+# Brief pause so AI Engine binds before Celery tasks can reach it
+sleep 2
+
 # ── Start Celery worker ───────────────────────────────────────────────────────
 info "Starting Celery worker..."
+cd "$BACKEND"
 celery -A config worker \
     --loglevel=info \
     --concurrency=2 \
@@ -101,8 +142,10 @@ ok "Daphne PID=$DAPHNE_PID  ->  logs/daphne.log"
 echo ""
 echo -e "${GREEN}=====================================================${NC}"
 echo -e "${GREEN}  DEFENCESYS running at  http://localhost:8000${NC}"
-echo -e "${GREEN}  Neo4j Browser          http://localhost:7474${NC}"
-echo -e "${GREEN}  Logs: logs/daphne.log  logs/celery.log${NC}"
+echo -e "${GREEN}  AI Engine (FastAPI)     http://localhost:8001${NC}"
+echo -e "${GREEN}  AI Engine Health        http://localhost:8001/health${NC}"
+echo -e "${GREEN}  Neo4j Browser           http://localhost:7474${NC}"
+echo -e "${GREEN}  Logs:  logs/daphne.log  |  logs/celery.log  |  logs/ai_engine.log${NC}"
 echo -e "${GREEN}  Press Ctrl+C to stop all services${NC}"
 echo -e "${GREEN}=====================================================${NC}"
 

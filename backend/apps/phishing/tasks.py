@@ -87,7 +87,31 @@ def analyze_phishing_async(
             result.get("confidence", 0.0),
         )
 
-        # ── 2. Write threat topology to Neo4j (best-effort) ───────────────────
+        # ── 2. Broadcast to alert_feed group (dashboard bell) ───────────────
+        if result.get("is_phishing"):
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            from datetime import datetime, timezone
+            
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                conf_pct = round((result.get("confidence", 0.0)) * 100)
+                async_to_sync(channel_layer.group_send)(
+                    "alert_feed",
+                    {
+                        "type": "threat.alert",
+                        "title": "🎣 Phishing Detected",
+                        "message": (
+                            f"Session {session_id[:8]}… classified as PHISHING "
+                            f"(confidence {conf_pct}%)"
+                        ),
+                        "alert_type": "phishing",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "session_id": session_id,
+                    },
+                )
+
+        # ── 3. Write threat topology to Neo4j (best-effort) ───────────────────
         if result.get("is_phishing"):
             _write_phishing_to_graph(
                 session_id=session_id,

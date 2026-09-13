@@ -75,6 +75,11 @@ class ThreatGraphVisualizer {
             }
         });
 
+        // Freeze graph physics after stabilization to save CPU
+        this._network.on('stabilizationIterationsDone', () => {
+            this._network.setOptions({ physics: false });
+        });
+
         await this._fetchAndRender();
         this._startAutoRefresh();
     }
@@ -145,6 +150,11 @@ class ThreatGraphVisualizer {
         this._edges.clear();
         this._nodes.add(formattedNodes);
         this._edges.add(formattedEdges);
+        
+        // Re-enable physics to layout new data
+        if (this._network) {
+            this._network.setOptions({ physics: true });
+        }
     }
 
     _renderEmptyState() {

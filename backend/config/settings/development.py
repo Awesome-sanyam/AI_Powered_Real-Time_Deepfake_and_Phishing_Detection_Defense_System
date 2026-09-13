@@ -91,8 +91,10 @@ CORS_ALLOW_CREDENTIALS = True
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ── Static files ──────────────────────────────────────────────────────────────
+# NOTE: Do NOT override STATICFILES_DIRS here — base.py already sets it to
+# [BASE_DIR / "static"]. Overriding with [] here was causing all JS/CSS
+# files to return 404 in development. (Bug fixed 2026-09-13)
 STATIC_URL = "/static/"
-STATICFILES_DIRS: list = []
 
 # ── Logging — structured per-module output ────────────────────────────────────
 LOGGING = {

@@ -12,3 +12,4 @@ cryptography>=42.0
 python-dotenv>=1.0
 gunicorn>=22.0
 httpx>=0.27          # async HTTP calls to AI engine
+moviepy>=1.0.3       # video frame/audio extraction for file upload analysis

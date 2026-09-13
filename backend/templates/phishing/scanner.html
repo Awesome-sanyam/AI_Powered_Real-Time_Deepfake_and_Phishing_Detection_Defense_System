@@ -349,12 +349,18 @@ Senior Analyst, Finance`,
         const deadline = Date.now() + maxSecs * 1000;
         while (Date.now() < deadline) {
             await sleep(2000);
-            const resp = await fetch(`/api/phishing/scans/?session_id=${sessionId}`);
-            if (!resp.ok) continue;
-            const data = await resp.json();
-            const scans = data.results || data;
-            const match = scans.find(s => s.session_id === sessionId);
-            if (match && match.is_phishing !== null) return match;
+            try {
+                // Server already filters by session_id — just check first result
+                const resp = await fetch(`/api/phishing/scans/?session_id=${sessionId}`);
+                if (!resp.ok) continue;
+                const data = await resp.json();
+                const scans = data.results || (Array.isArray(data) ? data : []);
+                const match = scans.find(s => s.session_id === sessionId)
+                           || (scans.length === 1 ? scans[0] : null);
+                if (match && match.is_phishing !== null && match.is_phishing !== undefined) {
+                    return match;
+                }
+            } catch (_) { /* network blip — keep polling */ }
         }
         return null;
     }
@@ -499,9 +505,15 @@ Senior Analyst, Finance`,
     }
 
     function showError(msg) {
-        document.getElementById('results-placeholder').classList.remove('hidden');
-        document.getElementById('results-placeholder').querySelector('p').textContent = msg;
         document.getElementById('results-panel').classList.add('hidden');
+        const placeholder = document.getElementById('results-placeholder');
+        placeholder.classList.remove('hidden');
+        const icon = placeholder.querySelector('div');
+        if (icon) icon.className = 'w-14 h-14 rounded-full bg-danger-bg border border-danger-border flex items-center justify-center';
+        const iconEl = placeholder.querySelector('i');
+        if (iconEl) { iconEl.className = 'fa-solid fa-triangle-exclamation text-danger-text text-xl'; }
+        const p = placeholder.querySelector('p');
+        if (p) { p.textContent = msg; p.className = 'text-[13px] font-medium text-danger-text'; }
     }
 
     function getCsrf() {

@@ -141,10 +141,20 @@ def upsert_threat_node(
 
     try:
         neo_label = node_type.capitalize()
+        # Build node with all properties
         node = Node(neo_label, label=label, risk_score=risk_score, **(metadata or {}))
+        # merge() upserts based on the primary key property ("label" here)
         graph.merge(node, neo_label, "label")
+        # Re-fetch the node after merge to read the server-assigned element_id.
+        # NOTE: node.identity was removed in py2neo ≥ 2021.2 — do NOT use it.
+        persisted = graph.nodes.match(neo_label, label=label).first()
+        element_id = str(persisted.identity) if persisted is not None else "merged"
         logger.debug("Upserted %s node: %s (risk=%.2f)", neo_label, label, risk_score)
-        return str(node.identity)
+        return element_id
+    except AttributeError:
+        # Fallback for py2neo versions where .identity is still available
+        logger.debug("Upserted %s node: %s (risk=%.2f) [legacy py2neo]", neo_label, label, risk_score)
+        return "ok"
     except Exception as exc:
         logger.error("Neo4j upsert error for %s:%s — %s", node_type, label, exc)
         return None

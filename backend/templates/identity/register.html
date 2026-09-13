@@ -22,7 +22,12 @@
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes slide-in-err {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         .card-enter { animation: slide-up 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .error-enter { animation: slide-in-err 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
         .input-field {
             width: 100%;
             padding: 0.625rem 0.875rem;
@@ -36,11 +41,11 @@
         }
         .input-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
         }
         .input-field.error-field {
             border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
         }
         .field-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
         .btn-primary {
@@ -82,7 +87,7 @@
             </p>
 
             {% if error %}
-            <div style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
+            <div class="error-enter" style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
                 <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
                 <span>{{ error }}</span>
             </div>
@@ -167,23 +172,43 @@
         bar.style.background = color;
         lbl.textContent      = label;
         lbl.style.color      = color;
+        checkMatch();
     }
 
     function checkMatch() {
         const pw  = document.getElementById('password').value;
         const cnf = document.getElementById('password_confirm').value;
         const hint = document.getElementById('pw-match-hint');
-        const btn  = document.getElementById('submit-btn');
+        
         if (!cnf) { hint.textContent = ''; return; }
         if (pw === cnf) {
             hint.textContent = '✓ Passwords match';
             hint.style.color = '#22c55e';
-            btn.disabled = false;
+            document.getElementById('password_confirm').classList.remove('error-field');
         } else {
             hint.textContent = '✗ Passwords do not match';
             hint.style.color = '#ef4444';
+            document.getElementById('password_confirm').classList.add('error-field');
         }
     }
+    
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+        const pw  = document.getElementById('password').value;
+        const cnf = document.getElementById('password_confirm').value;
+        
+        if (pw.length < 8) {
+            e.preventDefault();
+            document.getElementById('password').classList.add('error-field');
+            document.getElementById('pw-strength-label').textContent = 'Password must be at least 8 characters.';
+            document.getElementById('pw-strength-label').style.color = '#ef4444';
+        }
+        
+        if (pw !== cnf) {
+            e.preventDefault();
+            document.getElementById('password_confirm').classList.add('error-field');
+            checkMatch();
+        }
+    });
     </script>
 </body>
 </html>

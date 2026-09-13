@@ -20,7 +20,7 @@ Message protocol (server → client):
 import base64
 import json
 import logging
-
+import time
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .tasks import analyze_deepfake_async
@@ -37,6 +37,7 @@ class DeepfakeStreamConsumer(AsyncWebsocketConsumer):
         self._frame_buffer: list[str] = []   # list of base64 JPEG strings
         self._audio_buffer: bytes = b""
         self._fps: float = 12.0
+        self._last_dispatch_time: float = 0.0
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
@@ -53,7 +54,11 @@ class DeepfakeStreamConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data: str = None, bytes_data: bytes = None) -> None:
         if text_data:
-            payload = json.loads(text_data)
+            try:
+                payload = json.loads(text_data)
+            except json.JSONDecodeError:
+                return
+                
             p_type = payload.get("type")
 
             if p_type == "video_frame":
@@ -86,6 +91,12 @@ class DeepfakeStreamConsumer(AsyncWebsocketConsumer):
         """Send buffered frames + audio to Celery for AI analysis."""
         if not self._frame_buffer:
             return
+            
+        now = time.monotonic()
+        if now - self._last_dispatch_time < 0.1:  # 10 FPS throttle (100ms)
+            return
+        self._last_dispatch_time = now
+            
         n_frames = len(self._frame_buffer)
         audio_b64 = base64.b64encode(self._audio_buffer).decode() if self._audio_buffer else ""
 
@@ -103,3 +114,47 @@ class DeepfakeStreamConsumer(AsyncWebsocketConsumer):
     async def deepfake_verdict(self, event: dict) -> None:
         """Push verdict from Celery task back to the WebSocket client."""
         await self.send(text_data=json.dumps(event["verdict"]))
+
+
+class FileScanProgressConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for file-upload deepfake scan progress.
+
+    Connects to:  ws/deepfake/file/<session_id>/
+    Group:        file_scan_<session_id>
+
+    Receives `file.scan.update` events from the `analyze_deepfake_file_async`
+    Celery task and forwards them to the browser as JSON so the UI can render
+    a live progress bar and the final verdict.
+
+    Message (server → client):
+        {
+            "type": "file.scan.update",
+            "session_id": "...",
+            "status": "processing" | "analysing" | "saving" | "complete" | "error",
+            "progress": 0-100,
+            # On complete:
+            "is_deepfake": bool, "confidence": float, ...
+            # On error:
+            "error": "..."
+        }
+    """
+
+    async def connect(self) -> None:
+        self.session_id = self.scope["url_route"]["kwargs"]["session_id"]
+        self.group_name = f"file_scan_{self.session_id}"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+        await self.send(text_data=json.dumps({
+            "type": "connected",
+            "session_id": self.session_id,
+        }))
+        logger.info("FileScanProgress WS connected: session=%s", self.session_id)
+
+    async def disconnect(self, close_code: int) -> None:
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        logger.info("FileScanProgress WS disconnected: session=%s code=%s", self.session_id, close_code)
+
+    async def file_scan_update(self, event: dict) -> None:
+        """Forward progress/verdict events from the Celery task to the browser."""
+        await self.send(text_data=json.dumps(event))

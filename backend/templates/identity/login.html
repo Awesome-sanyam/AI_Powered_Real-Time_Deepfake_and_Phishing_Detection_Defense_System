@@ -25,7 +25,12 @@
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes slide-in-err {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         .card-enter { animation: slide-up 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .error-enter { animation: slide-in-err 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
 
         .input-field {
             width: 100%;
@@ -40,7 +45,7 @@
         }
         .input-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
         }
         .btn-primary {
             width: 100%;
@@ -78,7 +83,7 @@
             <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1.5rem;">Enter your credentials to access the SOC Dashboard.</p>
 
             {% if error %}
-            <div style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
+            <div class="error-enter" style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
                 <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
                 <span>{{ error }}</span>
             </div>

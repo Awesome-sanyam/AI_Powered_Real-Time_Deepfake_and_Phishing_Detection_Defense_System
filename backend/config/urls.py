@@ -8,7 +8,7 @@ from django.contrib import admin
 from django.urls import path, include
 
 # HTML views — these replace the old TemplateView stubs
-from apps.core.views import DashboardView
+from apps.core.views import DashboardView, ai_engine_health
 from apps.deepfake.views import DeepfakeMonitorView
 from apps.phishing.views import PhishingScannerView
 from apps.threat_graph.views import ThreatGraphPageView
@@ -48,6 +48,7 @@ urlpatterns = [
     path("auth/", include(auth_patterns)),
 
     # API Routes
+    path("api/ai-engine/health/", ai_engine_health, name="ai-engine-health"),
     path("api/deepfake/", include("apps.deepfake.urls")),
     path("api/phishing/", include("apps.phishing.urls")),
     path("api/identity/", include("apps.identity.urls")),

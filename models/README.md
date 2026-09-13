@@ -33,7 +33,7 @@ Used by: `ai_engine/phishing/llm_analyzer.py` — LLM-powered phishing intent cl
 ```bash
 # Option A: Hugging Face CLI (recommended)
 pip install huggingface_hub
-huggingface-cli download bartowski/Llama-3.2-3B-Instruct-GGUF \
+hf download bartowski/Llama-3.2-3B-Instruct-GGUF \
     Llama-3.2-3B-Instruct-Q4_K_M.gguf \
     --local-dir models/
 

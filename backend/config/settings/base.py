@@ -75,6 +75,14 @@ DATABASES = {
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "soc_password"),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        # Keep connections alive for 60s — reduces TCP handshake overhead on
+        # every Celery task/Django request. Safe for all WSGI/ASGI workers.
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,   # Django 4.1+ — validate before reuse
+        "OPTIONS": {
+            "connect_timeout": 5,     # fail fast if Postgres is unreachable
+            "application_name": "defencesys",
+        },
     }
 }
 
@@ -122,6 +130,11 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL  = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+# Allow large file uploads (up to 500 MB) for video analysis
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000   # 500 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000   # 500 MB
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Authentication redirects ────────────────────────────────────────────────────────

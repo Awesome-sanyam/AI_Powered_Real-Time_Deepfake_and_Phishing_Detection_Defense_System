@@ -20,11 +20,14 @@ import base64
 import logging
 import os
 import time
+import traceback
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from ai_engine.config import DEVICE_NAME, IS_MPS, get_device_report
@@ -92,6 +95,59 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+
+
+# ── Global exception handlers ────────────────────────────────────────────────
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Return structured 422 for missing/wrong payload keys instead of Pydantic tracebacks."""
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "error_type": "validation_error",
+            "detail": exc.errors(),
+            "hint": "Check required fields: session_id, frames_b64, audio_b64 (deepfake) or content (phishing)",
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """
+    Catch-all handler: prevents Uvicorn from crashing on GPU OOM errors,
+    array dimension mismatches, or any other unexpected runtime exceptions.
+    Returns structured JSON 500 with the traceback for debugging.
+    """
+    tb = traceback.format_exc()
+    logger.error("Unhandled exception on %s: %s\n%s", request.url.path, exc, tb)
+
+    # Detect common MPS / CUDA OOM patterns
+    error_str = str(exc).lower()
+    if "out of memory" in error_str or "oom" in error_str or "mps" in error_str and "allocation" in error_str:
+        import gc
+        import torch
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+        gc.collect()
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "error_type": "gpu_oom",
+                "detail": "GPU memory exhausted. Cache cleared. Retry with fewer frames.",
+            },
+        )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "error_type": type(exc).__name__,
+            "detail": str(exc),
+        },
+    )
 
 
 # ── Pydantic request schemas ──────────────────────────────────────────────────

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -51,9 +52,11 @@ _LE_INNER      = 39
 _LE_BOT_INNER  = 40
 _LE_BOT_OUTER  = 41
 
-_DEFAULT_PREDICTOR_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "models",
-    "shape_predictor_68_face_landmarks.dat"
+# Resolve path relative to THIS FILE’s location, not the process CWD.
+# This ensures the model loads correctly regardless of which directory
+# uvicorn is launched from.
+_DEFAULT_PREDICTOR_PATH = str(
+    Path(__file__).resolve().parent.parent.parent / "models" / "shape_predictor_68_face_landmarks.dat"
 )
 
 # ── dlib import guard ─────────────────────────────────────────────────────────

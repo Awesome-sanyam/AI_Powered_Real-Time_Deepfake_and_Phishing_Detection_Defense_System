@@ -65,19 +65,37 @@ class PhishingAnalyzer:
         """Run LLM inference and parse JSON verdict."""
         if self._llm is None:
             return {}
-        prompt = f"[INST] <<SYS>>\n{SYSTEM_PROMPT}\n<</SYS>>\n\n{content[:800]} [/INST]"
+        prompt = f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{SYSTEM_PROMPT}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{content[:800]}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
         try:
             output = self._llm(
                 prompt,
                 max_tokens=int(os.environ.get("LLM_MAX_TOKENS", 256)),
                 temperature=0.1,
-                stop=["</s>", "[INST]"],
+                stop=["<|eot_id|>"],
             )
             raw = output["choices"][0]["text"].strip()
-            # Extract JSON from response
-            match = re.search(r"\{.*\}", raw, re.DOTALL)
-            if match:
-                return json.loads(match.group())
+            # 1. Strip markdown code block backticks if present
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"```\s*$", "", raw)
+            raw = raw.strip()
+
+            # 2. Find outermost braces
+            start_idx = raw.find('{')
+            end_idx = raw.rfind('}')
+            
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = raw[start_idx:end_idx+1]
+                
+                # 3. Clean up trailing commas before closing braces/brackets (common LLM artifact)
+                json_str = re.sub(r",\s*\}", "}", json_str)
+                json_str = re.sub(r",\s*\]", "]", json_str)
+                
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError as jde:
+                    logger.warning(f"Failed to decode LLM JSON: {jde}. Raw: {json_str}")
+            else:
+                logger.warning("No JSON object found in LLM response.")
         except Exception as exc:
             logger.error(f"LLM inference error: {exc}")
         return {}

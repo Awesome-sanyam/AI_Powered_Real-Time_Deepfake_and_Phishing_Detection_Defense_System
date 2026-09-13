@@ -10,3 +10,9 @@
 #   - The run script:     run_dev.sh
 #
 # See: https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html
+
+try:
+    from .celery import app as celery_app
+    __all__ = ("celery_app",)
+except ImportError:
+    pass

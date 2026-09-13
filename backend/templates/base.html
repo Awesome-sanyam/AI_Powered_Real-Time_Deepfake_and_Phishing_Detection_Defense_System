@@ -13,7 +13,15 @@
     <title>{% block title %}DEFENCESYS — SOC Dashboard{% endblock %}</title>
 
     <script>
+        // Set theme immediately to avoid flash
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -70,6 +78,9 @@
         .live-dot {
             animation: pulse-live 1.5s infinite;
         }
+        .dot-online { background-color: #22c55e; }
+        .dot-reconnecting { background-color: #f59e0b; }
+        .dot-offline { background-color: #ef4444; }
 
         /* ── Toast slide-in ───────────────────────────────────────────── */
         @keyframes slide-in {
@@ -103,28 +114,32 @@
         </div>
 
         <!-- Navigation -->
-        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Main Navigation">
             <a href="{% url 'dashboard:index' %}" 
+               aria-current="{% if request.resolver_match.app_name == 'dashboard' %}page{% else %}false{% endif %}"
                class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'dashboard' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-chart-line w-4 text-center text-text-muted"></i>
+                <i class="fa-solid fa-chart-line w-4 text-center text-text-muted" aria-hidden="true"></i>
                 <span>SOC Overview</span>
             </a>
 
             <a href="{% url 'deepfake:monitor' %}"
+               aria-current="{% if request.resolver_match.app_name == 'deepfake' %}page{% else %}false{% endif %}"
                class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'deepfake' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-video w-4 text-center text-text-muted"></i>
+                <i class="fa-solid fa-video w-4 text-center text-text-muted" aria-hidden="true"></i>
                 <span>Deepfake Monitor</span>
             </a>
 
             <a href="{% url 'phishing:scanner' %}"
+               aria-current="{% if request.resolver_match.app_name == 'phishing' %}page{% else %}false{% endif %}"
                class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'phishing' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-envelope-open-text w-4 text-center text-text-muted"></i>
+                <i class="fa-solid fa-envelope-open-text w-4 text-center text-text-muted" aria-hidden="true"></i>
                 <span>Phishing Scanner</span>
             </a>
 
             <a href="{% url 'threat_graph:view' %}"
+               aria-current="{% if request.resolver_match.app_name == 'threat_graph' %}page{% else %}false{% endif %}"
                class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'threat_graph' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-circle-nodes w-4 text-center text-text-muted"></i>
+                <i class="fa-solid fa-circle-nodes w-4 text-center text-text-muted" aria-hidden="true"></i>
                 <span>Threat Graph</span>
             </a>
         </nav>
@@ -154,8 +169,8 @@
             <div class="flex items-center gap-4">
                 <!-- Search (outline style) -->
                 <div class="relative hidden md:block">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm"></i>
-                    <input type="text" placeholder="Search logs, alerts..." class="h-[36px] w-64 pl-9 pr-3 rounded-lg border border-border-default bg-surface-card text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-info-border focus:ring-1 focus:ring-info-border transition-colors">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm" aria-hidden="true"></i>
+                    <input type="text" aria-label="Search logs and alerts" placeholder="Search logs, alerts..." class="h-[36px] w-64 pl-9 pr-3 rounded-lg border border-border-default bg-surface-card text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-info-border focus:ring-1 focus:ring-info-border transition-colors">
                 </div>
 
                 <!-- Live clock -->
@@ -172,6 +187,11 @@
                     <i class="fa-solid fa-bell text-sm"></i>
                     <!-- Red dot only -->
                     <span id="alert-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-danger-border rounded-full hidden border-2 border-surface-card"></span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="p-2 rounded-lg text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border" aria-label="Toggle theme">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
                 </button>
 
                 <!-- User badge + logout -->
@@ -244,8 +264,31 @@
         };
         window.alertClient.connect();
 
-        // Probe Neo4j / AI engine health
-        fetch('/api/graph/health/')
+        // Theme toggle logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleIcon = document.getElementById('theme-toggle-icon');
+
+        function updateThemeIcon() {
+            if (document.documentElement.classList.contains('dark')) {
+                themeToggleIcon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                themeToggleIcon.classList.replace('fa-sun', 'fa-moon');
+            }
+        }
+
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.theme = 'dark';
+            } else {
+                localStorage.theme = 'light';
+            }
+            updateThemeIcon();
+        });
+        updateThemeIcon();
+
+        // Probe AI engine health
+        fetch('/api/ai-engine/health/')
             .then(r => r.json())
             .then(d => {
                 const el = document.getElementById('ai-engine-status');

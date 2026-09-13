@@ -2,100 +2,234 @@
 {% load static %}
 
 {% block title %}Deepfake Monitor — DEFENCESYS{% endblock %}
-{% block header_title %}Live Deepfake Monitor{% endblock %}
+{% block header_title %}Deepfake Detection{% endblock %}
 
 {% block extra_head %}
 <style>
-    /* Meter animations */
-    .meter-fill { transition: width 0.5s cubic-bezier(0.22,1,0.36,1); }
-    .gauge-needle { transition: transform 0.5s cubic-bezier(0.22,1,0.36,1); transform-origin: bottom center; }
+    /* ── Tab underline ─────────────────────────────────────────────────── */
+    .tab-btn { position: relative; }
+    .tab-btn::after {
+        content: '';
+        position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+        background: transparent; transition: background 0.2s;
+    }
+    .tab-btn.active::after { background: #60a5fa; }
+    .tab-btn.active { color: #93c5fd; }
 
-    /* Fade in verdict card */
+    /* ── Meter animations ─────────────────────────────────────────────── */
+    .meter-fill { transition: width 0.5s cubic-bezier(0.22,1,0.36,1); }
+
+    /* ── Verdict pop-in ───────────────────────────────────────────────── */
     @keyframes verdict-pop {
         from { opacity: 0; transform: scale(0.95); }
         to   { opacity: 1; transform: scale(1); }
     }
     .verdict-pop { animation: verdict-pop 0.3s ease forwards; }
 
-    /* HUD canvas sits exactly on top of video */
+    /* ── Video HUD canvas ─────────────────────────────────────────────── */
     .video-wrapper { position: relative; }
     .video-wrapper canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 0.5rem; }
     .video-wrapper video  { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; background: #0b1120; }
 
-    /* ECDSA badge glow */
+    /* ── ECDSA glow ───────────────────────────────────────────────────── */
     @keyframes sig-glow {
         0%,100% { box-shadow: 0 0 8px  rgba(59,130,246,0.4); }
         50%      { box-shadow: 0 0 20px rgba(59,130,246,0.8); }
     }
     .sig-verified { animation: sig-glow 2s ease infinite; }
+
+    /* ── Drag & drop zone ─────────────────────────────────────────────── */
+    #drop-zone {
+        border: 2px dashed var(--color-border, rgba(255,255,255,0.12));
+        border-radius: 0.75rem;
+        transition: border-color 0.2s, background 0.2s;
+        cursor: pointer;
+    }
+    #drop-zone.drag-over {
+        border-color: #60a5fa;
+        background: rgba(59,130,246,0.06);
+    }
+    #drop-zone.invalid-drag {
+        border-color: #ef4444;
+        background: rgba(239,68,68,0.06);
+    }
+
+    /* ── Progress bar ─────────────────────────────────────────────────── */
+    #upload-progress-bar { transition: width 0.4s cubic-bezier(0.22,1,0.36,1); }
+
+    /* ── Spinner ──────────────────────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="flex flex-col xl:flex-row gap-4 h-full">
 
-    <!-- ── Left: Video viewport ──────────────────────────────────────────────── -->
+    <!-- ── Left: Input area (tabbed) ─────────────────────────────────────── -->
     <div class="flex-1 flex flex-col gap-4 min-w-0">
 
-        <!-- Video + HUD -->
+        <!-- Tab switcher -->
         <div class="bg-surface-card rounded-xl border border-border-default overflow-hidden">
-            <div class="px-5 py-3 border-b border-border-default flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div id="stream-dot" class="w-2 h-2 rounded-full bg-border-strong"></div>
-                    <span id="stream-label" class="text-[13px] font-medium text-text-secondary">Camera off</span>
-                </div>
-                <div class="flex items-center gap-2">
+            <div class="flex items-center border-b border-border-default px-5 gap-6">
+                <button id="tab-camera" class="tab-btn active py-3 text-sm font-medium text-text-primary focus:outline-none transition-colors" onclick="switchTab('camera')">
+                    <i class="fa-solid fa-video mr-1.5 text-xs"></i>Live Camera
+                </button>
+                <button id="tab-file" class="tab-btn py-3 text-sm font-medium text-text-secondary focus:outline-none transition-colors" onclick="switchTab('file')">
+                    <i class="fa-solid fa-file-video mr-1.5 text-xs"></i>File Upload
+                </button>
+                <div class="ml-auto flex items-center gap-3">
                     <span id="session-badge" class="text-xs text-text-muted font-mono hidden">SESSION: —</span>
                 </div>
             </div>
 
-            <!-- Video area -->
-            <div class="video-wrapper bg-[#141414]" style="aspect-ratio:16/9;">
-                <video id="webcam-video" autoplay playsinline muted></video>
-                <canvas id="hud-canvas"></canvas>
-                <!-- Placeholder -->
-                <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                    <div class="w-16 h-16 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center">
-                        <i class="fa-solid fa-video-slash text-text-muted text-2xl"></i>
-                    </div>
-                    <p class="text-[13px] font-medium text-text-primary">Camera not started</p>
-                    <p class="text-xs text-text-muted">Click <strong class="text-text-primary">Start Camera</strong> below</p>
+            <!-- ── Panel: Live Camera ──────────────────────────────────────── -->
+            <div id="panel-camera">
+                <!-- Status bar -->
+                <div class="px-5 py-2.5 border-b border-border-default flex items-center gap-2">
+                    <div id="stream-dot" class="w-2 h-2 rounded-full bg-border-strong flex-shrink-0"></div>
+                    <span id="stream-label" class="text-[13px] font-medium text-text-secondary">Camera off</span>
                 </div>
-            </div>
-        </div>
 
-        <!-- Controls -->
-        <div class="bg-surface-card rounded-xl border border-border-default p-4">
-            <div class="flex flex-wrap gap-3 items-center">
-                <button id="btn-start"
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-info-bg border border-info-border text-info-text hover:bg-info-border/50 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-info-border">
-                    <i class="fa-solid fa-play text-xs"></i> Start Camera
-                </button>
-                <button id="btn-pause" disabled
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-sunken border border-border-strong text-text-primary hover:bg-border-default text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-pause text-xs"></i> Pause Stream
-                </button>
-                <button id="btn-stop" disabled
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-danger-bg border border-danger-border text-danger-text hover:bg-danger-border/50 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-stop text-xs"></i> Stop
-                </button>
-                <label class="flex items-center gap-2 cursor-pointer select-none ml-auto">
-                    <input type="checkbox" id="audio-toggle" checked class="rounded text-info-border bg-surface-page border-border-strong focus:ring-info-border focus:ring-offset-1 focus:ring-offset-surface-card">
-                    <span class="text-xs text-text-muted">Capture Audio</span>
-                </label>
-                <div class="text-xs text-text-muted font-mono">
-                    FPS: <span id="cfg-fps">12</span>
+                <!-- Video area -->
+                <div class="video-wrapper bg-[#0d111c]" style="aspect-ratio:16/9;">
+                    <video id="webcam-video" autoplay playsinline muted></video>
+                    <canvas id="hud-canvas"></canvas>
+                    <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                        <div class="w-16 h-16 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center">
+                            <i class="fa-solid fa-video-slash text-text-muted text-2xl"></i>
+                        </div>
+                        <p class="text-[13px] font-medium text-text-primary">Camera not started</p>
+                        <p class="text-xs text-text-muted">Click <strong class="text-text-primary">Start Camera</strong> below</p>
+                    </div>
+                </div>
+
+                <!-- Camera controls -->
+                <div class="px-5 py-4 flex flex-wrap gap-3 items-center">
+                    <button id="btn-start"
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-info-bg border border-info-border text-info-text hover:bg-info-border/50 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-info-border">
+                        <i class="fa-solid fa-play text-xs"></i> Start Camera
+                    </button>
+                    <button id="btn-pause" disabled
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-sunken border border-border-strong text-text-primary hover:bg-border-default text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-pause text-xs"></i> Pause
+                    </button>
+                    <button id="btn-stop" disabled
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-danger-bg border border-danger-border text-danger-text hover:bg-danger-border/50 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-stop text-xs"></i> Stop
+                    </button>
+                    <label class="flex items-center gap-2 cursor-pointer select-none ml-auto">
+                        <input type="checkbox" id="audio-toggle" checked class="rounded text-info-border">
+                        <span class="text-xs text-text-muted">Capture Audio</span>
+                    </label>
+                    <div class="text-xs text-text-muted font-mono">FPS: <span id="cfg-fps">12</span></div>
                 </div>
             </div>
+
+            <!-- ── Panel: File Upload ──────────────────────────────────────── -->
+            <div id="panel-file" class="hidden p-5 space-y-4">
+                <!-- Drop zone -->
+                <div id="drop-zone"
+                     class="flex flex-col items-center justify-center gap-3 p-10 text-center"
+                     onclick="document.getElementById('file-input').click()">
+                    <div class="w-14 h-14 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up text-info-border text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-text-primary">Drop video or audio file here</p>
+                        <p class="text-xs text-text-muted mt-1">Accepts .mp4 .webm .mov .mp3 .wav .aac — Max 500 MB</p>
+                    </div>
+                    <button type="button"
+                            class="px-4 py-2 rounded-lg bg-info-bg border border-info-border text-info-text text-sm font-medium hover:bg-info-border/50 transition-colors focus:outline-none"
+                            onclick="event.stopPropagation(); document.getElementById('file-input').click()">
+                        Browse Files
+                    </button>
+                    <input id="file-input" type="file" accept="video/*,audio/*,.mp4,.webm,.mov,.mp3,.wav,.aac,.m4a" class="hidden">
+                </div>
+
+                <!-- Selected file info -->
+                <div id="file-info" class="hidden flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-sunken border border-border-default">
+                    <i id="file-icon" class="fa-solid fa-file-video text-info-border text-lg flex-shrink-0"></i>
+                    <div class="flex-1 min-w-0">
+                        <p id="file-name" class="text-sm font-medium text-text-primary truncate">—</p>
+                        <p id="file-size" class="text-xs text-text-muted">—</p>
+                    </div>
+                    <button id="btn-clear-file" class="text-text-muted hover:text-danger-text transition-colors text-sm">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Progress -->
+                <div id="upload-progress-container" class="hidden space-y-2">
+                    <div class="flex items-center justify-between text-xs text-text-secondary">
+                        <span id="upload-status-label">Uploading…</span>
+                        <span id="upload-pct">0%</span>
+                    </div>
+                    <div class="h-2 bg-surface-sunken rounded-full overflow-hidden border border-border-default">
+                        <div id="upload-progress-bar" class="h-full bg-info-border rounded-full" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <!-- Analyse button -->
+                <div class="flex items-center gap-3">
+                    <button id="btn-analyse-file" disabled
+                            class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-warning-bg border border-warning-border hover:bg-warning-border/50 text-warning-text text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-warning-border">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        Analyse File
+                    </button>
+                    <div id="file-spinner" class="hidden items-center gap-2 text-text-muted text-xs">
+                        <i class="fa-solid fa-circle-notch spinner"></i> Analysing…
+                    </div>
+                </div>
+            </div>
+        </div><!-- /tabbed card -->
+
+        <!-- Recent sessions table -->
+        {% if recent_sessions %}
+        <div class="bg-surface-card rounded-xl border border-border-default p-5">
+            <h3 class="text-sm font-semibold text-text-primary mb-3">Recent Sessions</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead>
+                        <tr class="text-text-muted uppercase tracking-wider border-b border-border-default">
+                            <th class="pb-2 pr-4">Session</th>
+                            <th class="pb-2 pr-4">Verdict</th>
+                            <th class="pb-2 pr-4">Confidence</th>
+                            <th class="pb-2">Frames</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-default">
+                        {% for s in recent_sessions %}
+                        <tr class="hover:bg-surface-sunken transition-colors">
+                            <td class="py-2 pr-4 font-mono text-text-muted">{{ s.session_id|slice:":8" }}…</td>
+                            <td class="py-2 pr-4">
+                                {% if s.is_deepfake %}
+                                    <span class="px-2 py-0.5 rounded-full bg-danger-bg border border-danger-border text-danger-text">FAKE</span>
+                                {% elif s.is_deepfake == False %}
+                                    <span class="px-2 py-0.5 rounded-full bg-success-bg border border-success-border text-success-text">REAL</span>
+                                {% else %}
+                                    <span class="text-text-muted">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2 pr-4 font-mono text-text-primary">
+                                {% if s.confidence %}{{ s.confidence|floatformat:2 }}{% else %}—{% endif %}
+                            </td>
+                            <td class="py-2 text-text-secondary">{{ s.frame_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
+        {% endif %}
     </div>
 
-    <!-- ── Right: Metrics Panel ──────────────────────────────────────────────── -->
+    <!-- ── Right: Metrics Panel ───────────────────────────────────────────── -->
     <div class="w-full xl:w-80 flex flex-col gap-4 flex-shrink-0">
 
         <!-- Verdict card -->
         <div id="verdict-card" class="bg-surface-card rounded-xl border border-border-default p-5">
-            <h3 class="text-sm font-semibold text-text-primary mb-4">Current Verdict</h3>
+            <h3 class="text-sm font-semibold text-text-primary mb-4">Analysis Result</h3>
             <div id="verdict-display" class="flex items-center gap-3 mb-4">
                 <div id="verdict-icon"
                      class="w-12 h-12 rounded-full bg-surface-sunken border border-border-strong flex items-center justify-center flex-shrink-0">
@@ -116,12 +250,17 @@
                     <div id="conf-bar" class="h-full bg-border-strong rounded-full meter-fill" style="width:0%"></div>
                 </div>
             </div>
+            <!-- LLM Reasoning (shown for file uploads) -->
+            <div id="file-reasoning-box" class="hidden mt-4 bg-surface-sunken rounded-lg p-3 text-xs text-text-secondary leading-relaxed border border-border-default">
+                <p class="text-[11px] font-medium text-text-primary uppercase tracking-wider mb-1">AI Analysis</p>
+                <p id="file-reasoning-text">—</p>
+            </div>
         </div>
 
         <!-- Artifact Score -->
         <div class="bg-surface-card rounded-xl border border-border-default p-5">
             <h3 class="text-[13px] font-medium text-text-primary mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-eye text-info-border text-xs"></i>
+                <i class="fa-solid fa-eye text-info-border text-xs" title="Visual Artifact Score: Detects spatial inconsistencies and blending errors common in face-swapped deepfakes."></i>
                 Visual Artifact Score
             </h3>
             <div class="flex items-end gap-2 mb-2">
@@ -137,7 +276,7 @@
         <!-- Lip-Sync Delay -->
         <div class="bg-surface-card rounded-xl border border-border-default p-5">
             <h3 class="text-[13px] font-medium text-text-primary mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-waveform text-warning-border text-xs"></i>
+                <i class="fa-solid fa-waveform text-warning-border text-xs" title="Lip-Sync Delay: Measures the time difference between audio energy peaks and visual mouth movements. >80ms indicates potential audio/video manipulation."></i>
                 Lip-Sync Delay
             </h3>
             <div class="flex items-baseline gap-2 mb-2">
@@ -157,7 +296,7 @@
         <!-- Blink Rate -->
         <div class="bg-surface-card rounded-xl border border-border-default p-5">
             <h3 class="text-[13px] font-medium text-text-primary mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-eye-slash text-success-border text-xs"></i>
+                <i class="fa-solid fa-eye-slash text-success-border text-xs" title="Blink Rate: Tracks eye aspect ratio (EAR) over time. Unnaturally low or high blink rates can be an indicator of AI generation."></i>
                 Blink Rate
             </h3>
             <div class="flex items-baseline gap-2 mb-1">
@@ -198,151 +337,64 @@
 (function() {
     'use strict';
 
-    const videoEl  = document.getElementById('webcam-video');
-    const hudCanvas = document.getElementById('hud-canvas');
-    const placeholder = document.getElementById('camera-placeholder');
-    const streamDot   = document.getElementById('stream-dot');
-    const streamLabel = document.getElementById('stream-label');
+    // ── Tab switching ─────────────────────────────────────────────────────────
+    window.switchTab = function(tab) {
+        const isCamera = (tab === 'camera');
+        document.getElementById('panel-camera').classList.toggle('hidden', !isCamera);
+        document.getElementById('panel-file').classList.toggle('hidden',   isCamera);
+        document.getElementById('tab-camera').classList.toggle('active', isCamera);
+        document.getElementById('tab-file').classList.toggle('active',   !isCamera);
+    };
 
-    let manager = null;
-    let paused  = false;
-
-    // Sync HUD canvas size to video
-    function syncCanvas() {
-        if (!videoEl.videoWidth) return;
-        hudCanvas.width  = videoEl.videoWidth;
-        hudCanvas.height = videoEl.videoHeight;
-    }
-    videoEl.addEventListener('loadedmetadata', syncCanvas);
-
-    // ── Start ────────────────────────────────────────────────────────────────
-    document.getElementById('btn-start').addEventListener('click', async () => {
-        const sessionId = crypto.randomUUID ? crypto.randomUUID()
-                                            : `sess-${Date.now()}`;
-
-        document.getElementById('session-badge').textContent = `SESSION: ${sessionId.slice(0,8)}`;
-        document.getElementById('session-badge').classList.remove('hidden');
-
-        const captureAudio = document.getElementById('audio-toggle').checked;
-
-        manager = new WebcamStreamManager({
-            videoEl,
-            hudCanvas,
-            sessionId,
-            targetFps:   12,
-            jpegQuality: 0.75,
-            captureAudio,
-            onVerdict:      renderVerdict,
-            onStatusChange: renderStreamStatus,
-        });
-
-        try {
-            await manager.start();
-            placeholder.style.display = 'none';
-            setButtonState(true);
-        } catch (err) {
-            alert(`Camera error: ${err.message}`);
-        }
-    });
-
-    // ── Pause / Resume ────────────────────────────────────────────────────────
-    document.getElementById('btn-pause').addEventListener('click', (e) => {
-        if (!manager) return;
-        const btn = e.currentTarget;
-        btn.innerHTML = ''; // Clear contents safely
-        const icon = document.createElement('i');
-        
-        if (!paused) { 
-            manager.pause(); 
-            paused = true;
-            icon.className = 'fa-solid fa-play text-xs';
-            btn.appendChild(icon);
-            btn.appendChild(document.createTextNode(' Resume'));
-        } else { 
-            manager.resume(); 
-            paused = false;
-            icon.className = 'fa-solid fa-pause text-xs';
-            btn.appendChild(icon);
-            btn.appendChild(document.createTextNode(' Pause Stream'));
-        }
-    });
-
-    // ── Stop ──────────────────────────────────────────────────────────────────
-    document.getElementById('btn-stop').addEventListener('click', () => {
-        if (manager) { manager.stop(); manager = null; }
-        placeholder.style.display = 'flex';
-        setButtonState(false);
-        renderStreamStatus('stopped');
-        resetMetrics();
-    });
-
-    function setButtonState(running) {
-        document.getElementById('btn-start').disabled  = running;
-        document.getElementById('btn-pause').disabled  = !running;
-        document.getElementById('btn-stop').disabled   = !running;
-    }
-
-    function renderStreamStatus(status) {
-        const dotCls = { streaming: 'live-dot bg-success-text', paused: 'bg-warning-text', stopped: 'bg-border-strong', error: 'bg-danger-text' };
-        const label  = { streaming: 'Streaming', paused: 'Paused', stopped: 'Camera off', error: 'Error' };
-        streamDot.className = `w-2 h-2 rounded-full flex-shrink-0 ${dotCls[status] || 'bg-border-strong'}`;
-        streamLabel.textContent = label[status] || status;
-    }
-
-    // ── Render verdict into metrics panel ─────────────────────────────────────
+    // ── Shared metrics render ─────────────────────────────────────────────────
     function renderVerdict(v) {
-        const isFake     = v.is_deepfake;
-        const conf       = v.confidence || 0;
-        const confPct    = Math.round(conf * 100);
+        const isFake  = v.is_deepfake;
+        const conf    = v.confidence || 0;
+        const confPct = Math.round(conf * 100);
 
-        // Verdict card
-        const icon  = document.getElementById('verdict-icon');
-        const label = document.getElementById('verdict-label');
-        const confEl = document.getElementById('verdict-conf');
-        const confBar = document.getElementById('conf-bar');
+        const icon     = document.getElementById('verdict-icon');
+        const label    = document.getElementById('verdict-label');
+        const confEl   = document.getElementById('verdict-conf');
+        const confBar  = document.getElementById('conf-bar');
         const confPctEl = document.getElementById('conf-pct');
 
+        icon.innerHTML = '';
+        const i = document.createElement('i');
         if (isFake) {
             icon.className  = 'w-12 h-12 rounded-full bg-danger-bg border border-danger-border flex items-center justify-center flex-shrink-0';
-            icon.innerHTML = ''; // Clear safely
-            const i = document.createElement('i');
             i.className = 'fa-solid fa-triangle-exclamation text-danger-text text-xl';
-            icon.appendChild(i);
             label.textContent = 'DEEPFAKE';
-            label.className = 'text-lg font-bold text-danger-text';
+            label.className = 'text-lg font-bold text-danger-text verdict-pop';
             confBar.className = 'h-full bg-danger-border rounded-full meter-fill';
         } else {
             icon.className  = 'w-12 h-12 rounded-full bg-success-bg border border-success-border flex items-center justify-center flex-shrink-0';
-            icon.innerHTML = '';
-            const i = document.createElement('i');
             i.className = 'fa-solid fa-circle-check text-success-text text-xl';
-            icon.appendChild(i);
             label.textContent = 'AUTHENTIC';
-            label.className = 'text-lg font-bold text-success-text';
+            label.className = 'text-lg font-bold text-success-text verdict-pop';
             confBar.className = 'h-full bg-success-border rounded-full meter-fill';
         }
-        confEl.textContent  = `Confidence: ${confPct}%`;
-        confBar.style.width = `${confPct}%`;
+        icon.appendChild(i);
+
+        confEl.textContent   = `Confidence: ${confPct}%`;
+        confBar.style.width  = `${confPct}%`;
         confPctEl.textContent = `${confPct}%`;
 
-        // Frame results (average across frames)
-        if (v.frame_results && v.frame_results.length > 0) {
-            const fr = v.frame_results;
-            const avgArtifact = fr.reduce((a, f) => a + f.visual_artifact_score, 0) / fr.length;
-            const avgLipSync  = fr.reduce((a, f) => a + f.lip_sync_delay_ms, 0) / fr.length;
-            const avgBlink    = fr.reduce((a, f) => a + f.blink_rate_bpm, 0) / fr.length;
+        // Frame averages
+        const fr = v.frame_results || [];
+        if (fr.length > 0) {
+            const avg = (arr, fn) => arr.reduce((a, f) => a + fn(f), 0) / arr.length;
+            const avgArtifact = avg(fr, f => f.visual_artifact_score || 0);
+            const avgLipSync  = avg(fr, f => f.lip_sync_delay_ms    || 0);
+            const avgBlink    = avg(fr, f => f.blink_rate_bpm        || 0);
 
-            // Artifact score
             document.getElementById('artifact-val').textContent = avgArtifact.toFixed(2);
             document.getElementById('artifact-bar').style.width = `${Math.round(avgArtifact * 100)}%`;
 
-            // Lip-sync
             const lipMs = Math.round(avgLipSync);
             document.getElementById('lipsync-val').textContent = lipMs;
             document.getElementById('lipsync-bar').style.width = `${Math.min(100, lipMs / 2)}%`;
             document.getElementById('lipsync-alert').classList.toggle('hidden', lipMs <= 80);
 
-            // Blink rate
             const bpm = Math.round(avgBlink);
             document.getElementById('blink-val').textContent = bpm;
             document.getElementById('blink-alert').classList.toggle('hidden', bpm >= 8 && bpm <= 30);
@@ -355,9 +407,9 @@
             document.getElementById('ecdsa-sig-short').textContent = v.signed_verdict.slice(0, 24) + '…';
         }
 
-        // Global toast for fake detection
+        // Global toast
         if (isFake && typeof window.showToast === 'function') {
-            window.showToast('⚠ Deepfake Detected', `Confidence: ${confPct}% — Session ${v.session_id.slice(0,8)}`, 'deepfake');
+            window.showToast('⚠ Deepfake Detected', `Confidence: ${confPct}% — Session ${(v.session_id||'').slice(0,8)}`, 'deepfake');
         }
     }
 
@@ -376,7 +428,330 @@
         document.getElementById('blink-alert').classList.add('hidden');
         document.getElementById('ecdsa-unverified').classList.remove('hidden');
         document.getElementById('ecdsa-verified').classList.add('hidden');
+        document.getElementById('file-reasoning-box').classList.add('hidden');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // LIVE CAMERA TAB
+    // ─────────────────────────────────────────────────────────────────────────
+    const videoEl     = document.getElementById('webcam-video');
+    const hudCanvas   = document.getElementById('hud-canvas');
+    const placeholder = document.getElementById('camera-placeholder');
+    const streamDot   = document.getElementById('stream-dot');
+    const streamLabel = document.getElementById('stream-label');
+
+    let manager = null;
+    let paused  = false;
+
+    function syncCanvas() {
+        if (!videoEl.videoWidth) return;
+        hudCanvas.width  = videoEl.videoWidth;
+        hudCanvas.height = videoEl.videoHeight;
+    }
+    videoEl.addEventListener('loadedmetadata', syncCanvas);
+
+    document.getElementById('btn-start').addEventListener('click', async () => {
+        const sessionId = crypto.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`;
+        document.getElementById('session-badge').textContent = `SESSION: ${sessionId.slice(0,8)}`;
+        document.getElementById('session-badge').classList.remove('hidden');
+
+        manager = new WebcamStreamManager({
+            videoEl,
+            hudCanvas,
+            sessionId,
+            targetFps:   12,
+            jpegQuality: 0.75,
+            captureAudio: document.getElementById('audio-toggle').checked,
+            onVerdict:      renderVerdict,
+            onStatusChange: renderStreamStatus,
+        });
+
+        try {
+            await manager.start();
+            placeholder.style.display = 'none';
+            setCameraButtons(true);
+        } catch (err) {
+            alert(`Camera error: ${err.message}`);
+        }
+    });
+
+    document.getElementById('btn-pause').addEventListener('click', (e) => {
+        if (!manager) return;
+        const btn = e.currentTarget;
+        btn.innerHTML = '';
+        const icon = document.createElement('i');
+        if (!paused) {
+            manager.pause(); paused = true;
+            icon.className = 'fa-solid fa-play text-xs';
+            btn.appendChild(icon);
+            btn.appendChild(document.createTextNode(' Resume'));
+        } else {
+            manager.resume(); paused = false;
+            icon.className = 'fa-solid fa-pause text-xs';
+            btn.appendChild(icon);
+            btn.appendChild(document.createTextNode(' Pause'));
+        }
+    });
+
+    document.getElementById('btn-stop').addEventListener('click', () => {
+        if (manager) { manager.stop(); manager = null; }
+        placeholder.style.display = 'flex';
+        setCameraButtons(false);
+        renderStreamStatus('stopped');
+        resetMetrics();
+    });
+
+    function setCameraButtons(running) {
+        document.getElementById('btn-start').disabled = running;
+        document.getElementById('btn-pause').disabled = !running;
+        document.getElementById('btn-stop').disabled  = !running;
+    }
+
+    function renderStreamStatus(status) {
+        const dotCls = { streaming:'bg-success-text', paused:'bg-warning-text', stopped:'bg-border-strong', error:'bg-danger-text' };
+        const lblMap = { streaming:'Streaming', paused:'Paused', stopped:'Camera off', error:'Error' };
+        streamDot.className   = `w-2 h-2 rounded-full flex-shrink-0 ${dotCls[status] || 'bg-border-strong'}`;
+        streamLabel.textContent = lblMap[status] || status;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FILE UPLOAD TAB
+    // ─────────────────────────────────────────────────────────────────────────
+    let selectedFile    = null;
+    let fileScanWs      = null;
+    let fileScanSession = null;
+
+    // File-type icon helper
+    function fileIcon(type) {
+        if (type.startsWith('video/')) return 'fa-file-video';
+        if (type.startsWith('audio/')) return 'fa-file-audio';
+        return 'fa-file';
+    }
+
+    function formatBytes(b) {
+        if (b < 1024)       return `${b} B`;
+        if (b < 1024*1024)  return `${(b/1024).toFixed(1)} KB`;
+        return `${(b/1024/1024).toFixed(1)} MB`;
+    }
+
+    function setFileInfo(file) {
+        selectedFile = file;
+        document.getElementById('file-info').classList.remove('hidden');
+        document.getElementById('file-icon').className = `fa-solid ${fileIcon(file.type)} text-info-border text-lg flex-shrink-0`;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('file-size').textContent = formatBytes(file.size);
+        document.getElementById('btn-analyse-file').disabled = false;
+    }
+
+    function clearFile() {
+        selectedFile = null;
+        document.getElementById('file-input').value = '';
+        document.getElementById('file-info').classList.add('hidden');
+        document.getElementById('btn-analyse-file').disabled = true;
+        document.getElementById('upload-progress-container').classList.add('hidden');
+        setUploadProgress(0, '');
+    }
+
+    function setUploadProgress(pct, label) {
+        document.getElementById('upload-progress-bar').style.width = `${pct}%`;
+        document.getElementById('upload-pct').textContent = `${pct}%`;
+        if (label) document.getElementById('upload-status-label').textContent = label;
+    }
+
+    // Drag & drop
+    const dropZone = document.getElementById('drop-zone');
+    
+    function isValidDragItem(item) {
+        if (!item) return false;
+        if (item.type) {
+            return item.type.startsWith('video/') || item.type.startsWith('audio/');
+        }
+        return true; // if type not determined during drag, allow drop to check
+    }
+
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        const items = e.dataTransfer.items;
+        if (items.length > 0 && !isValidDragItem(items[0])) {
+            dropZone.classList.add('invalid-drag');
+            dropZone.classList.remove('drag-over');
+        } else {
+            dropZone.classList.add('drag-over');
+            dropZone.classList.remove('invalid-drag');
+        }
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+        dropZone.classList.remove('invalid-drag');
+    });
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        dropZone.classList.remove('invalid-drag');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            if (isValidDragItem(file)) {
+                setFileInfo(file);
+            } else {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Invalid File Type', 'Please upload a valid video or audio file.', 'deepfake');
+                }
+            }
+        }
+    });
+
+    document.getElementById('file-input').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (file) setFileInfo(file);
+    });
+
+    document.getElementById('btn-clear-file').addEventListener('click', clearFile);
+
+    document.getElementById('btn-analyse-file').addEventListener('click', async () => {
+        if (!selectedFile) return;
+
+        resetMetrics();
+        document.getElementById('upload-progress-container').classList.remove('hidden');
+        setUploadProgress(5, 'Uploading…');
+        document.getElementById('btn-analyse-file').disabled = true;
+        document.getElementById('file-spinner').classList.remove('hidden');
+        document.getElementById('file-spinner').classList.add('flex');
+
+        try {
+            // 1. Upload the file via multipart POST
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const uploadResp = await fetch('/api/deepfake/upload/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrf() },
+                body: formData,
+            });
+
+            const uploadData = await uploadResp.json();
+            if (!uploadResp.ok) {
+                throw new Error(uploadData.error || 'Upload failed');
+            }
+
+            fileScanSession = uploadData.session_id;
+            document.getElementById('session-badge').textContent = `SESSION: ${fileScanSession.slice(0,8)}`;
+            document.getElementById('session-badge').classList.remove('hidden');
+
+            setUploadProgress(15, 'Queued — connecting…');
+
+            // 2. Open WebSocket for real-time progress
+            await connectFileScanWs(fileScanSession);
+
+        } catch (err) {
+            setUploadProgress(0, `Error: ${err.message}`);
+            document.getElementById('upload-progress-bar').className = 'h-full bg-danger-border rounded-full';
+            document.getElementById('btn-analyse-file').disabled = false;
+            document.getElementById('file-spinner').classList.add('hidden');
+            document.getElementById('file-spinner').classList.remove('flex');
+        }
+    });
+
+    function connectFileScanWs(sessionId) {
+        return new Promise((resolve, reject) => {
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            const ws = new WebSocket(`${proto}://${location.host}/ws/deepfake/file/${sessionId}/`);
+            fileScanWs = ws;
+
+            const timeout = setTimeout(() => {
+                ws.close();
+                reject(new Error('WebSocket connection timed out'));
+            }, 10000);
+
+            ws.onopen = () => { clearTimeout(timeout); resolve(); };
+            ws.onerror = (e) => { clearTimeout(timeout); reject(new Error('WebSocket error')); };
+
+            ws.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                handleFileScanUpdate(msg);
+            };
+
+            ws.onclose = () => {
+                fileScanWs = null;
+                // If close happened before we rendered a verdict, fall back to polling
+                if (fileScanSession) {
+                    pollFileScanResult(fileScanSession, 120);
+                }
+            };
+        });
+    }
+
+    function handleFileScanUpdate(msg) {
+        const status = msg.status || msg.type;
+
+        if (status === 'connected') {
+            setUploadProgress(20, 'Extracting frames…');
+            return;
+        }
+        if (status === 'processing') {
+            setUploadProgress(msg.progress || 20, 'Processing file…');
+            return;
+        }
+        if (status === 'analysing') {
+            setUploadProgress(msg.progress || 50, 'Running AI analysis…');
+            return;
+        }
+        if (status === 'saving') {
+            setUploadProgress(msg.progress || 85, 'Saving results…');
+            return;
+        }
+        if (status === 'complete') {
+            setUploadProgress(100, 'Analysis complete ✓');
+            document.getElementById('upload-progress-bar').className = 'h-full bg-success-border rounded-full';
+            renderVerdict(msg);
+            finishFileAnalysis();
+            fileScanSession = null;
+            return;
+        }
+        if (status === 'error') {
+            setUploadProgress(0, `Error: ${msg.error || 'Unknown error'}`);
+            document.getElementById('upload-progress-bar').className = 'h-full bg-danger-border rounded-full';
+            finishFileAnalysis();
+            fileScanSession = null;
+            return;
+        }
+    }
+
+    // Fallback polling (if WS closes before task completes)
+    async function pollFileScanResult(sessionId, maxSecs) {
+        const deadline = Date.now() + maxSecs * 1000;
+        while (Date.now() < deadline) {
+            await sleep(3000);
+            try {
+                const resp = await fetch(`/api/deepfake/file-scan/${sessionId}/`);
+                if (!resp.ok) continue;
+                const data = await resp.json();
+                if (data.status === 'complete') {
+                    setUploadProgress(100, 'Analysis complete ✓');
+                    document.getElementById('upload-progress-bar').className = 'h-full bg-success-border rounded-full';
+                    renderVerdict(data);
+                    finishFileAnalysis();
+                    return;
+                }
+            } catch (e) { /* continue polling */ }
+        }
+        setUploadProgress(0, 'Timed out. Check logs.');
+        finishFileAnalysis();
+    }
+
+    function finishFileAnalysis() {
+        document.getElementById('btn-analyse-file').disabled = !!selectedFile ? false : true;
+        document.getElementById('file-spinner').classList.add('hidden');
+        document.getElementById('file-spinner').classList.remove('flex');
+        if (fileScanWs) { fileScanWs.close(); fileScanWs = null; }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function getCsrf() {
+        const m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 })();
 </script>
 {% endblock %}

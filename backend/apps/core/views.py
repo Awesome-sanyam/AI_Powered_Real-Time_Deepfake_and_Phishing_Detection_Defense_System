@@ -9,9 +9,12 @@ from __future__ import annotations
 import logging
 
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.conf import settings
+import httpx
 
 from apps.deepfake.models import DeepfakeScanSession
 from apps.identity.models import IdentityKey
@@ -69,3 +72,19 @@ class DashboardView(View):
             "recent_deepfakes":  recent_deepfakes,
             "recent_phishing":   recent_phishing,
         })
+
+
+def ai_engine_health(request):
+    """
+    Proxy endpoint to check the actual health of the FastAPI AI Engine (port 8001).
+    Used by the dashboard UI status dot.
+    """
+    try:
+        url = f"{settings.AI_ENGINE_BASE_URL}/health"
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(url)
+            if resp.status_code == 200:
+                return JsonResponse({"status": "ok"})
+    except Exception:
+        pass
+    return JsonResponse({"status": "offline"})

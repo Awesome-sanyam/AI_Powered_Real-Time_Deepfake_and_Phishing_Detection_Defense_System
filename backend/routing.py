@@ -4,6 +4,7 @@ Registers all WebSocket consumers at their respective URL patterns.
 
 Consumers:
     DeepfakeStreamConsumer  →  ws/deepfake/<session_id>/
+    FileScanProgressConsumer→  ws/deepfake/file/<session_id>/
     AlertFeedConsumer       →  ws/alerts/
 
 Used by config/asgi.py → ProtocolTypeRouter → URLRouter.
@@ -18,6 +19,13 @@ websocket_urlpatterns = [
         r"^ws/deepfake/(?P<session_id>[^/]+)/$",
         deepfake_consumers.DeepfakeStreamConsumer.as_asgi(),
         name="ws-deepfake-stream",
+    ),
+
+    # File upload scan progress — subscribes to file_scan_{session_id} group
+    re_path(
+        r"^ws/deepfake/file/(?P<session_id>[^/]+)/$",
+        deepfake_consumers.FileScanProgressConsumer.as_asgi(),
+        name="ws-deepfake-file-scan",
     ),
 
     # Real-time alert broadcast feed — Frontend dashboard subscribes here

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 import cv2
 import librosa
@@ -42,9 +43,11 @@ HOP_LENGTH: int = 512
 _DLIB_UPPER_LIP = 62
 _DLIB_LOWER_LIP = 66
 
-_DEFAULT_PREDICTOR_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "models",
-    "shape_predictor_68_face_landmarks.dat"
+# Resolve path relative to THIS FILE’s location, not the process CWD.
+# This ensures the model loads correctly regardless of which directory
+# uvicorn is launched from.
+_DEFAULT_PREDICTOR_PATH = str(
+    Path(__file__).resolve().parent.parent.parent / "models" / "shape_predictor_68_face_landmarks.dat"
 )
 
 # ── dlib import guard ─────────────────────────────────────────────────────────
@@ -134,11 +137,17 @@ class LipSyncVerifier:
         return np.array(apertures, dtype=np.float32)
 
     def extract_audio_energy(self, audio_bytes: bytes) -> np.ndarray:
-        """Extract frame-level RMS energy from raw 16-bit PCM bytes."""
+        """Extract frame-level RMS energy from raw 16-bit PCM bytes.
+        Returns zeros if audio_bytes is empty (silent stream or no mic).
+        """
+        if not audio_bytes:
+            return np.zeros(1, dtype=np.float32)
         audio = (
             np.frombuffer(audio_bytes, dtype=np.int16)
             .astype(np.float32) / 32768.0
         )
+        if len(audio) == 0:
+            return np.zeros(1, dtype=np.float32)
         rms = librosa.feature.rms(
             y=audio, frame_length=FRAME_LENGTH, hop_length=HOP_LENGTH
         )

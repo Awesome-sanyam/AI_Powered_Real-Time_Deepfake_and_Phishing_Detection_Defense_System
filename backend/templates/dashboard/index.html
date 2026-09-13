@@ -299,7 +299,7 @@
         const bgColor   = { deepfake: 'bg-danger-bg',  phishing: 'bg-warning-bg', identity: 'bg-info-bg', info: 'bg-surface-sunken' }[data.type] || 'bg-surface-sunken';
         const bdrColor  = { deepfake: 'border-danger-border',  phishing: 'border-warning-border', identity: 'border-info-border', info: 'border-border-default' }[data.type] || 'border-border-default';
 
-        const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        const ts = data.ts || new Date().toLocaleTimeString('en-GB', { hour12: false });
 
         const item = document.createElement('div');
         item.className = `feed-item flex items-start gap-3 p-3 rounded border-l-[3px] border-y border-r ${bgColor} ${bdrColor} border-y-border-default border-r-border-default`;
@@ -378,6 +378,30 @@
         setCounter('stat-phishing',     totalPhishing);
         setCounter('stat-verdicts',     totalVerdicts);
         updateBreakdown(totalDeepfakes, totalPhishing, activeScans);
+
+        // Pre-populate historical alerts
+        const historicalAlerts = [
+            {% for item in recent_deepfakes %}
+            {
+                type: 'deepfake',
+                title: 'Deepfake Detected',
+                message: 'Session {{ item.session_id|slice:":8" }} flagged with {{ item.confidence|floatformat:1 }}% confidence.',
+                ts: '{{ item.created_at|date:"H:i:s" }}'
+            },
+            {% endfor %}
+            {% for item in recent_phishing %}
+            {
+                type: 'phishing',
+                title: 'Phishing Threat',
+                message: 'Level: {{ item.risk_level }}. Session {{ item.session_id|slice:":8" }} ({{ item.confidence|floatformat:1 }}%).',
+                ts: '{{ item.created_at|date:"H:i:s" }}'
+            },
+            {% endfor %}
+        ];
+        
+        // Sort by time ascending so when we prepend, the newest ends up at the top
+        historicalAlerts.sort((a, b) => a.ts.localeCompare(b.ts));
+        historicalAlerts.forEach(injectAlert);
 
         pollStats();
         pollEngineHealth();
