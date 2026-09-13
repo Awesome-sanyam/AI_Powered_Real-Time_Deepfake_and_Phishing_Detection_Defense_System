@@ -21,10 +21,8 @@ import base64
 import gc
 import logging
 import os
-import struct
 import tempfile
 import wave
-from typing import Optional
 
 import httpx
 from asgiref.sync import async_to_sync
@@ -330,14 +328,11 @@ def _extract_from_video(file_path: str, sample_fps: float) -> tuple[list[str], s
         (frames_b64, audio_b64)
     """
     import cv2
-    import numpy as np
-
     cap = cv2.VideoCapture(file_path)
     if not cap.isOpened():
         raise ValueError(f"OpenCV cannot open file: {file_path}")
 
     native_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     step = max(1, int(native_fps / sample_fps))
 
     frames_b64: list[str] = []

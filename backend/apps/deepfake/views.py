@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import logging
 import os
-import tempfile
 import uuid
 
 from django.contrib.auth.decorators import login_required

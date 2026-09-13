@@ -1,12 +1,9 @@
-import tempfile
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
-
-from apps.deepfake.models import DeepfakeScanSession
 
 
 class DeepfakeFileUploadIntegrationTest(TestCase):
