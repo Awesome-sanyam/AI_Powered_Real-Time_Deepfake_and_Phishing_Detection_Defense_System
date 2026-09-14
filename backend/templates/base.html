@@ -12,8 +12,26 @@
     <meta name="description" content="AI-Powered Real-Time Deepfake and Phishing Detection Defence System — Security Operations Centre">
     <title>{% block title %}DEFENCESYS — SOC Command Center{% endblock %}</title>
 
-    <!-- Tailwind Config & Engine -->
+    <!-- Immediate flash-free theme script (executes before HTML render) -->
     <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === 'light') {
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <!-- Tailwind CSS Play CDN (loaded first so tailwind object is initialized) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.tailwind = window.tailwind || {};
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -62,10 +80,9 @@
             }
         };
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Persistent Theme Switcher (Immediate execute in head) -->
-    <script src="{% static 'js/theme_toggle.js' %}"></script>
+    <!-- Persistent Theme Switcher -->
+    <script src="{% static 'js/theme_toggle.js' %}?v=3.1.0"></script>
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -138,6 +155,36 @@
             font-family: 'Inter', system-ui, sans-serif;
             margin: 0;
             line-height: 1.5;
+            background-color: var(--color-bg-page);
+            color: var(--color-text-primary);
+        }
+
+        /* Direct zero-latency hardware-accelerated root background styling */
+        html:not(.dark) body,
+        html:not(.dark) main {
+            background-color: #f8fafc !important;
+            color: #0f172a;
+        }
+        html.dark body,
+        html.dark main {
+            background-color: #000000 !important;
+            color: #f4f4f5;
+        }
+        html:not(.dark) header {
+            background-color: rgba(255, 255, 255, 0.88) !important;
+            border-bottom-color: #e2e8f0 !important;
+        }
+        html.dark header {
+            background-color: rgba(9, 9, 11, 0.88) !important;
+            border-bottom-color: #27272a !important;
+        }
+        html:not(.dark) aside {
+            background-color: #ffffff !important;
+            border-right-color: #e2e8f0 !important;
+        }
+        html.dark aside {
+            background-color: #09090b !important;
+            border-right-color: #27272a !important;
         }
 
         /* ── Nav Active Highlight ─────────────────────────────────────── */
@@ -337,8 +384,14 @@
                 </button>
 
                 <!-- Persistent Theme Toggle (Sun/Moon) -->
-                <button id="theme-toggle-btn" data-theme-toggle class="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Toggle dark/light theme" title="Toggle theme">
-                    <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
+                <button id="theme-toggle-btn"
+                        type="button"
+                        data-theme-toggle
+                        onclick="toggleTheme()"
+                        class="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        aria-label="Toggle dark/light theme"
+                        title="Toggle theme">
+                    <i id="theme-toggle-icon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
                 </button>
 
                 <!-- ══════════════════════════════════════ USER PROFILE DROPDOWN -->

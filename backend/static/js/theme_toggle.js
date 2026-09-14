@@ -15,6 +15,7 @@
     'use strict';
 
     const STORAGE_KEY = 'theme';
+    let lastToggleTime = 0;
 
     /**
      * Determine initial theme ('dark' | 'light').
@@ -47,7 +48,7 @@
                 if (isDark) {
                     icon.className = 'fa-solid fa-sun text-amber-400 text-sm';
                 } else {
-                    icon.className = 'fa-solid fa-moon text-slate-600 dark:text-zinc-300 text-sm';
+                    icon.className = 'fa-solid fa-moon text-slate-600 text-sm';
                 }
             }
         });
@@ -56,17 +57,24 @@
     /**
      * Toggle current theme between dark and light.
      */
+    let isToggling = false;
     function toggleTheme() {
+        if (isToggling) return;
+        isToggling = true;
+        setTimeout(function() { isToggling = false; }, 120);
+
         const isDark = document.documentElement.classList.toggle('dark');
+        const theme = isDark ? 'dark' : 'light';
         try {
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            localStorage.setItem(STORAGE_KEY, theme);
         } catch (e) {}
         updateIcon(isDark);
 
         // Dispatch notification event for Vis.js canvas, chart re-renders & HUDs
         window.dispatchEvent(new CustomEvent('themeChanged', {
-            detail: { theme: isDark ? 'dark' : 'light', isDark: isDark }
+            detail: { theme: theme, isDark: isDark }
         }));
+        return theme;
     }
 
     /**
@@ -108,32 +116,24 @@
     }
 
     // Attach listeners on DOMContentLoaded
+    function initUI() {
+        const isDark = document.documentElement.classList.contains('dark');
+        updateIcon(isDark);
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initUI);
     } else {
         initUI();
     }
 
-    function initUI() {
-        const isDark = document.documentElement.classList.contains('dark');
-        updateIcon(isDark);
-
-        // Explicit click binding for toggle button
-        const btn = document.getElementById('theme-toggle-btn') || document.getElementById('theme-toggle');
+    // Single delegated click listener on document handles all theme toggle buttons and child icons cleanly
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('#theme-toggle-btn, #theme-toggle, [data-theme-toggle]');
         if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                toggleTheme();
-            });
+            e.preventDefault();
+            e.stopPropagation();
+            toggleTheme();
         }
-
-        // Delegated listener for any dynamically inserted or alternate toggle elements
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest('#theme-toggle-btn, #theme-toggle, [data-theme-toggle]');
-            if (target && target !== btn) {
-                e.preventDefault();
-                toggleTheme();
-            }
-        });
-    }
+    });
 })();

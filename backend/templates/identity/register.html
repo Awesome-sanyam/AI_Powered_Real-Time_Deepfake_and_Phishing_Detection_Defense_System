@@ -6,8 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account — DEFENCESYS</title>
 
-    <!-- Tailwind Config & Engine -->
+    <!-- Immediate flash-free theme script (executes before HTML render) -->
     <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === 'light') {
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <!-- Tailwind CSS Play CDN (loaded first so tailwind object is initialized) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.tailwind = window.tailwind || {};
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -20,10 +38,9 @@
             }
         };
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Theme Switcher (Immediate execute in head) -->
-    <script src="{% static 'js/theme_toggle.js' %}"></script>
+    <!-- Theme Switcher -->
+    <script src="{% static 'js/theme_toggle.js' %}?v=3.1.0"></script>
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -31,6 +48,16 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
+
+        /* Direct zero-latency theme fallback */
+        html:not(.dark) body {
+            background-color: #f8fafc !important;
+            color: #0f172a;
+        }
+        html.dark body {
+            background-color: #09090b !important;
+            color: #f4f4f5;
+        }
 
         /* Subtle grid background */
         .bg-grid-pattern {
@@ -62,10 +89,13 @@
     <!-- Top Navigation Controls -->
     <div class="absolute top-5 right-5 z-20 flex items-center gap-3">
         <button id="theme-toggle-btn"
+                type="button"
+                data-theme-toggle
+                onclick="toggleTheme()"
                 class="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 shadow-sm hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 aria-label="Toggle dark/light theme"
                 title="Toggle theme">
-            <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
+            <i id="theme-toggle-icon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
         </button>
     </div>
 
