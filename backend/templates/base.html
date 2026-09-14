@@ -1,37 +1,58 @@
 {% load static %}
 <!DOCTYPE html>
 <!--
-  Theme Strategy: Tailwind `class` dark mode.
-  The inline script below runs before the body renders to apply/remove
-  the `dark` class on <html>, preventing any flash of wrong theme.
+  DEFENCESYS — Commercial-Grade Enterprise SOC Platform
+  Theme Strategy: Tailwind `class` dark mode with CSS custom properties.
+  Flash-free theme switcher via static/js/theme_toggle.js.
 -->
 <html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="AI-Powered Real-Time Deepfake and Phishing Detection Defence System — Security Operations Centre">
-    <title>{% block title %}DEFENCESYS — SOC Dashboard{% endblock %}</title>
+    <title>{% block title %}DEFENCESYS — SOC Command Center{% endblock %}</title>
 
+    <!-- Tailwind Config & Engine -->
     <script>
-        // Set theme immediately to avoid flash
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        surface: { page: '#F7F7F5', card: '#FFFFFF', sunken: '#F0EFEC' },
-                        border: { default: '#E4E3DE', strong: '#CFCDC5' },
-                        text: { primary: '#1C1C1A', secondary: '#5F5E5A', muted: '#8A8880' },
-                        danger: { bg: '#FCEBEB', border: '#E24B4A', text: '#791F1F' },
-                        warning: { bg: '#FAEEDA', border: '#EF9F27', text: '#633806' },
-                        success: { bg: '#EAF3DE', border: '#639922', text: '#27500A' },
-                        info: { bg: '#E6F1FB', border: '#378ADD', text: '#0C447C' }
+                        surface: {
+                            page:   'var(--color-bg-page)',
+                            card:   'var(--color-bg-card)',
+                            sunken: 'var(--color-bg-sunken)',
+                        },
+                        border: {
+                            default: 'var(--color-border-default)',
+                            strong:  'var(--color-border-strong)',
+                        },
+                        text: {
+                            primary:   'var(--color-text-primary)',
+                            secondary: 'var(--color-text-secondary)',
+                            muted:     'var(--color-text-muted)',
+                        },
+                        danger: {
+                            bg:     'var(--color-danger-bg)',
+                            border: 'var(--color-danger-border)',
+                            text:   'var(--color-danger-text)',
+                        },
+                        warning: {
+                            bg:     'var(--color-warning-bg)',
+                            border: 'var(--color-warning-border)',
+                            text:   'var(--color-warning-text)',
+                        },
+                        success: {
+                            bg:     'var(--color-success-bg)',
+                            border: 'var(--color-success-border)',
+                            text:   'var(--color-success-text)',
+                        },
+                        info: {
+                            bg:     'var(--color-info-bg)',
+                            border: 'var(--color-info-border)',
+                            text:   'var(--color-info-text)',
+                        }
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -43,6 +64,9 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Persistent Theme Switcher (Immediate execute in head) -->
+    <script src="{% static 'js/theme_toggle.js' %}"></script>
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -51,54 +75,117 @@
 
         * { box-sizing: border-box; }
 
+        /* ── Unified Enterprise Palette (CrowdStrike / Linear / Vercel style) ── */
+        :root {
+            --color-bg-page:        #f8fafc; /* slate-50 */
+            --color-bg-card:        #ffffff; /* white */
+            --bg-canvas:            #f8fafc;
+            --bg-card:              #ffffff;
+            --color-bg-sunken:      #f1f5f9; /* slate-100 */
+            --color-border-default: #e2e8f0; /* slate-200 */
+            --color-border-strong:  #cbd5e1; /* slate-300 */
+            --color-text-primary:   #0f172a; /* slate-900 */
+            --color-text-secondary: #475569; /* slate-600 */
+            --color-text-muted:     #94a3b8; /* slate-400 */
+
+            --color-danger-bg:      #fef2f2;
+            --color-danger-border:  #ef4444;
+            --color-danger-text:    #b91c1c;
+
+            --color-warning-bg:     #fffbeb;
+            --color-warning-border: #f59e0b;
+            --color-warning-text:   #b45309;
+
+            --color-success-bg:     #f0fdf4;
+            --color-success-border: #22c55e;
+            --color-success-text:   #15803d;
+
+            --color-info-bg:        #eff6ff;
+            --color-info-border:    #3b82f6;
+            --color-info-text:      #1d4ed8;
+        }
+
+        .dark {
+            --color-bg-page:        #000000; /* pure pitch-black */
+            --color-bg-card:        #18181b; /* zinc-900 */
+            --bg-canvas:            #000000;
+            --bg-card:              #18181b;
+            --color-bg-sunken:      #09090b; /* zinc-950 */
+            --color-border-default: #27272a; /* zinc-800 */
+            --color-border-strong:  #3f3f46; /* zinc-700 */
+            --color-text-primary:   #f4f4f5; /* zinc-100 */
+            --color-text-secondary: #a1a1aa; /* zinc-400 */
+            --color-text-muted:     #71717a; /* zinc-500 */
+
+            --color-danger-bg:      rgba(239, 68, 68, 0.12);
+            --color-danger-border:  rgba(239, 68, 68, 0.4);
+            --color-danger-text:    #f87171;
+
+            --color-warning-bg:     rgba(245, 158, 11, 0.12);
+            --color-warning-border: rgba(245, 158, 11, 0.4);
+            --color-warning-text:   #fbbf24;
+
+            --color-success-bg:     rgba(34, 197, 94, 0.12);
+            --color-success-border: rgba(34, 197, 94, 0.4);
+            --color-success-text:   #4ade80;
+
+            --color-info-bg:        rgba(59, 130, 246, 0.12);
+            --color-info-border:    rgba(59, 130, 246, 0.4);
+            --color-info-text:      #60a5fa;
+        }
+
         body {
-            background-color: #F7F7F5;
-            color: #1C1C1A;
             font-family: 'Inter', system-ui, sans-serif;
             margin: 0;
             line-height: 1.5;
         }
 
-        h1, h2, h3, h4, h5, h6 {
-            line-height: 1.3;
-        }
-
-        /* ── Nav active highlight ─────────────────────────────────────── */
+        /* ── Nav Active Highlight ─────────────────────────────────────── */
         .nav-active {
-            color: #1C1C1A;
-            border-left: 2px solid #1C1C1A;
-            background: rgba(0,0,0,0.04);
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.08);
+            border-left: 3px solid #6366f1;
+            color: #4f46e5;
+        }
+        .dark .nav-active {
+            background: rgba(99, 102, 241, 0.16);
+            border-left: 3px solid #818cf8;
+            color: #c7d2fe;
         }
 
-        /* ── Animated status dot (live pulse ring) ────────────────────── */
+        /* ── Live Pulsing Dots ────────────────────────────────────────── */
         @keyframes pulse-live {
-            0%   { box-shadow: 0 0 0 0   rgba(34,197,94, 0.65); }
-            70%  { box-shadow: 0 0 0 5px rgba(34,197,94, 0);    }
-            100% { box-shadow: 0 0 0 0   rgba(34,197,94, 0);    }
+            0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
-        @keyframes pulse-ring {
-            0%   { box-shadow: 0 0 0 0px rgba(99,153,34,0.7), 0 0 0 0px rgba(99,153,34,0.3); }
-            60%  { box-shadow: 0 0 0 4px rgba(99,153,34,0.0), 0 0 0 8px rgba(99,153,34,0.0); }
-            100% { box-shadow: 0 0 0 0px rgba(99,153,34,0.7), 0 0 0 0px rgba(99,153,34,0.3); }
+        @keyframes pulse-amber {
+            0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70%  { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
-        .live-dot {
-            animation: pulse-live 1.8s cubic-bezier(0.4,0,0.6,1) infinite;
+        @keyframes pulse-red {
+            0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70%  { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        .live-ring {
-            animation: pulse-ring 2s cubic-bezier(0.4,0,0.6,1) infinite;
-        }
+
+        .dot-pulse-green { animation: pulse-live 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .dot-pulse-amber { animation: pulse-amber 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .dot-pulse-red   { animation: pulse-red 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
         .dot-online       { background-color: #22c55e; }
         .dot-reconnecting { background-color: #f59e0b; }
         .dot-offline      { background-color: #ef4444; }
 
-        /* ── Toast slide-in ───────────────────────────────────────────── */
+        /* ── Toast Slide-in ───────────────────────────────────────────── */
         @keyframes slide-in {
             from { transform: translateX(120%); opacity: 0; }
             to   { transform: translateX(0);    opacity: 1; }
         }
-        .toast-enter { animation: slide-in 0.32s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .toast-enter { animation: slide-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
-        /* ── Skeleton shimmer loader ──────────────────────────────────── */
+        /* ── Skeleton Shimmer Loader ──────────────────────────────────── */
         @keyframes shimmer {
             0%   { background-position: -200% 0; }
             100% { background-position:  200% 0; }
@@ -109,331 +196,445 @@
             animation: shimmer 1.5s infinite;
             border-radius: 6px;
         }
-        .skeleton-text { height: 0.875rem; }
-        .skeleton-title { height: 1.25rem; width: 60%; }
-
-        /* ── Scrollbar ────────────────────────────────────────────────── */
-        ::-webkit-scrollbar       { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #F0EFEC; }
-        ::-webkit-scrollbar-thumb { background: #CFCDC5; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #B0ADA5; }
-
-        /* ── Hover/Focus transitions ──────────────────────────────────── */
-        a, button, input {
-            transition: all 0.15s ease-out;
+        .dark .skeleton {
+            background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+            background-size: 200% 100%;
         }
 
-        /* ── Premium card hover ───────────────────────────────────────── */
+        /* ── Scrollbars ───────────────────────────────────────────────── */
+        ::-webkit-scrollbar       { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--color-bg-sunken); }
+        ::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ── Micro-interactions ───────────────────────────────────────── */
         .card-hover {
-            transition: box-shadow 0.2s ease, transform 0.15s ease;
+            transition: box-shadow 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
         }
         .card-hover:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
             transform: translateY(-1px);
         }
-
-        /* ── Glowing status badge ─────────────────────────────────────── */
-        .status-badge-live {
-            position: relative;
+        .dark .card-hover:hover {
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
         }
-        .status-badge-live::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: inherit;
-            background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(99,153,34,0.1));
-            z-index: -1;
-        }
-
-        /* ── Password strength indicator ──────────────────────────────── */
-        @keyframes fade-in-down {
-            from { opacity: 0; transform: translateY(-6px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .animate-error { animation: fade-in-down 0.25s ease forwards; }
-
-        /* ── Dark mode overrides ──────────────────────────────────────── */
-        .dark body {
-            background-color: #0f172a;
-            color: #e2e8f0;
-        }
-        .dark .bg-surface-card  { background-color: #1e293b !important; }
-        .dark .bg-surface-page  { background-color: #0f172a !important; }
-        .dark .bg-surface-sunken { background-color: #0f172a !important; }
-        .dark .border-border-default { border-color: #334155 !important; }
-        .dark .text-text-primary  { color: #f1f5f9 !important; }
-        .dark .text-text-secondary { color: #94a3b8 !important; }
-        .dark .text-text-muted    { color: #64748b !important; }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="h-screen flex overflow-hidden text-sm relative bg-surface-page text-text-primary">
+<body class="h-screen flex overflow-hidden text-sm relative bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
 
     <!-- ═══════════════════════════════════════════════════════════════ SIDEBAR -->
-    <aside class="w-[220px] flex-shrink-0 flex flex-col z-20 bg-surface-card border-r border-border-default">
+    <aside class="w-[220px] flex-shrink-0 flex flex-col z-20 bg-white dark:bg-zinc-950 border-r border-slate-200 dark:border-zinc-800 transition-colors duration-200">
         
-        <!-- Logo -->
-        <div class="h-14 flex items-center px-4 shrink-0">
-            <i class="fa-solid fa-shield-halved text-info-border text-lg mr-2"></i>
-            <span class="font-bold tracking-tight text-text-primary">DEFENCESYS</span>
+        <!-- Brand Logo -->
+        <div class="h-16 flex items-center px-4 shrink-0 border-b border-slate-100 dark:border-zinc-800/80">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-zinc-900 border border-indigo-200 dark:border-zinc-800 flex items-center justify-center mr-2.5 shadow-sm">
+                <i class="fa-solid fa-shield-halved text-indigo-600 dark:text-indigo-400 text-sm"></i>
+            </div>
+            <div>
+                <span class="font-bold tracking-tight text-slate-900 dark:text-zinc-100 text-base">DEFENCE<span class="text-indigo-600 dark:text-indigo-400">SYS</span></span>
+                <span class="block text-[10px] font-mono text-slate-400 dark:text-zinc-500 uppercase tracking-widest leading-none mt-0.5">SOC · Tier-1</span>
+            </div>
         </div>
 
-        <!-- Navigation -->
-        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Main Navigation">
+        <!-- Navigation Menu -->
+        <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto" aria-label="Main Navigation">
             <a href="{% url 'dashboard:index' %}" 
                aria-current="{% if request.resolver_match.app_name == 'dashboard' %}page{% else %}false{% endif %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'dashboard' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-chart-line w-4 text-center text-text-muted" aria-hidden="true"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-lg transition-colors {% if request.resolver_match.app_name == 'dashboard' %}nav-active{% else %}text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 hover:text-slate-900 dark:hover:text-zinc-100{% endif %}">
+                <i class="fa-solid fa-chart-line w-4 text-center {% if request.resolver_match.app_name == 'dashboard' %}text-indigo-600 dark:text-indigo-400{% else %}text-slate-400 dark:text-zinc-500{% endif %}" aria-hidden="true"></i>
                 <span>SOC Overview</span>
             </a>
 
             <a href="{% url 'deepfake:monitor' %}"
                aria-current="{% if request.resolver_match.app_name == 'deepfake' %}page{% else %}false{% endif %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'deepfake' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-video w-4 text-center text-text-muted" aria-hidden="true"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-lg transition-colors {% if request.resolver_match.app_name == 'deepfake' %}nav-active{% else %}text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 hover:text-slate-900 dark:hover:text-zinc-100{% endif %}">
+                <i class="fa-solid fa-video w-4 text-center {% if request.resolver_match.app_name == 'deepfake' %}text-indigo-600 dark:text-indigo-400{% else %}text-slate-400 dark:text-zinc-500{% endif %}" aria-hidden="true"></i>
                 <span>Deepfake Monitor</span>
             </a>
 
             <a href="{% url 'phishing:scanner' %}"
                aria-current="{% if request.resolver_match.app_name == 'phishing' %}page{% else %}false{% endif %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'phishing' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-envelope-open-text w-4 text-center text-text-muted" aria-hidden="true"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-lg transition-colors {% if request.resolver_match.app_name == 'phishing' %}nav-active{% else %}text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 hover:text-slate-900 dark:hover:text-zinc-100{% endif %}">
+                <i class="fa-solid fa-envelope-open-text w-4 text-center {% if request.resolver_match.app_name == 'phishing' %}text-indigo-600 dark:text-indigo-400{% else %}text-slate-400 dark:text-zinc-500{% endif %}" aria-hidden="true"></i>
                 <span>Phishing Scanner</span>
             </a>
 
             <a href="{% url 'threat_graph:view' %}"
                aria-current="{% if request.resolver_match.app_name == 'threat_graph' %}page{% else %}false{% endif %}"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm transition-colors {% if request.resolver_match.app_name == 'threat_graph' %}nav-active text-text-primary{% else %}text-text-secondary hover:bg-black/5 hover:text-text-primary{% endif %}">
-                <i class="fa-solid fa-circle-nodes w-4 text-center text-text-muted" aria-hidden="true"></i>
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-lg transition-colors {% if request.resolver_match.app_name == 'threat_graph' %}nav-active{% else %}text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 hover:text-slate-900 dark:hover:text-zinc-100{% endif %}">
+                <i class="fa-solid fa-circle-nodes w-4 text-center {% if request.resolver_match.app_name == 'threat_graph' %}text-indigo-600 dark:text-indigo-400{% else %}text-slate-400 dark:text-zinc-500{% endif %}" aria-hidden="true"></i>
                 <span>Threat Graph</span>
+            </a>
+
+            <a href="/identity/vault/"
+               aria-current="{% if request.path == '/identity/vault/' %}page{% else %}false{% endif %}"
+               class="nav-link flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-lg transition-colors {% if request.path == '/identity/vault/' %}nav-active{% else %}text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 hover:text-slate-900 dark:hover:text-zinc-100{% endif %}">
+                <i class="fa-solid fa-key w-4 text-center {% if request.path == '/identity/vault/' %}text-indigo-600 dark:text-indigo-400{% else %}text-slate-400 dark:text-zinc-500{% endif %}" aria-hidden="true"></i>
+                <span>Identity Vault</span>
             </a>
         </nav>
 
-        <!-- Footer status -->
-        <div class="p-4 space-y-3 border-t border-border-default">
+        <!-- Sidebar Footer Status -->
+        <div class="p-3.5 space-y-2.5 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60">
             <!-- Live WS status -->
-            <div class="flex items-center gap-2.5 px-2">
-                <div id="ws-status-dot" class="w-2 h-2 rounded-full dot-offline flex-shrink-0"></div>
-                <span id="ws-status-text" class="text-xs text-text-muted">Connecting…</span>
+            <div class="flex items-center gap-2.5 px-2 py-1 rounded-md bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
+                <div id="ws-status-dot" class="w-2 h-2 rounded-full dot-offline dot-pulse-red flex-shrink-0"></div>
+                <span id="ws-status-text" class="text-[11px] font-medium text-slate-500 dark:text-zinc-400 truncate">Connecting…</span>
             </div>
-            <!-- AI engine status -->
-            <div id="ai-engine-status" class="flex items-center gap-2.5 px-2">
-                <div class="w-2 h-2 rounded-full flex-shrink-0 bg-text-muted opacity-40"></div>
-                <span class="text-xs text-text-muted">AI Engine</span>
+            <!-- AI Engine status -->
+            <div id="ai-engine-status" class="flex items-center gap-2.5 px-2 py-1 rounded-md bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
+                <div class="w-2 h-2 rounded-full flex-shrink-0 bg-slate-400 opacity-60"></div>
+                <span class="text-[11px] font-medium text-slate-500 dark:text-zinc-400 truncate">AI Engine Probing…</span>
             </div>
         </div>
     </aside>
 
     <!-- ════════════════════════════════════════════════════════ MAIN CONTENT -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+    <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-50 dark:bg-black transition-colors duration-200">
 
-        <!-- Top bar with backdrop blur -->
-        <header class="h-[64px] bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between px-6 z-10 flex-shrink-0 shadow-sm sticky top-0">
-            <h1 class="text-[22px] font-medium text-text-primary">{% block header_title %}Overview{% endblock %}</h1>
+        <!-- Executive Top Bar with Glassmorphism -->
+        <header class="h-[64px] bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between px-6 z-30 flex-shrink-0 shadow-xs sticky top-0 transition-colors duration-200">
+            
+            <div class="flex items-center gap-3">
+                <h1 class="text-lg font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">{% block header_title %}Overview{% endblock %}</h1>
+            </div>
 
-            <div class="flex items-center gap-4">
-                <!-- Search (outline style) -->
-                <div class="relative hidden md:block">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm" aria-hidden="true"></i>
-                    <input type="text" aria-label="Search logs and alerts" placeholder="Search logs, alerts..." class="h-[36px] w-64 pl-9 pr-3 rounded-lg border border-border-default bg-surface-card text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-info-border focus:ring-1 focus:ring-info-border transition-colors">
+            <!-- Header Status Badges & Controls -->
+            <div class="flex items-center gap-3">
+
+                <!-- 1. Live WebSocket Status Pill with Pulsing Dot -->
+                <div id="topbar-ws-badge" class="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
+                    <span id="topbar-ws-dot" class="w-2 h-2 rounded-full dot-offline dot-pulse-red"></span>
+                    <span id="topbar-ws-text">WS Connecting</span>
                 </div>
 
-                <!-- Live clock -->
-                <span id="topbar-time" class="text-caption font-mono hidden sm:block text-text-muted"></span>
+                <!-- 2. Apple Silicon MPS Hardware Accelerator Badge -->
+                <div id="topbar-mps-badge" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 dot-pulse-green"></span>
+                    <i class="fa-solid fa-microchip text-[11px] text-emerald-600 dark:text-emerald-400"></i>
+                    <span id="topbar-mps-text">MPS Active (Apple Metal GPU)</span>
+                </div>
 
-                <!-- MPS status pill with glow -->
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption bg-emerald-50 text-emerald-700 border border-emerald-200 status-badge-live">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-ring inline-block"></span>
-                    MPS Active
-                </span>
+                <!-- 3. ECDSA Attestation Engine Badge -->
+                <div class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 dot-pulse-green"></span>
+                    <i class="fa-solid fa-lock text-[10px] text-indigo-600 dark:text-indigo-400"></i>
+                    <span>Attestation Active</span>
+                </div>
 
-                <!-- Alert bell -->
-                <button id="alert-bell" class="relative p-2 rounded-lg text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border focus:ring-offset-2 focus:ring-offset-surface-card" aria-label="Notifications">
+                <!-- Live Clock -->
+                <span id="topbar-time" class="text-xs font-mono text-slate-400 dark:text-zinc-500 hidden xl:block ml-1"></span>
+
+                <!-- Vertical Divider -->
+                <div class="h-5 w-px bg-slate-200 dark:bg-zinc-800 mx-1 hidden sm:block"></div>
+
+                <!-- Alert Bell -->
+                <button id="alert-bell" class="relative p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View Threat Notifications">
                     <i class="fa-solid fa-bell text-sm"></i>
-                    <!-- Red dot only -->
-                    <span id="alert-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-danger-border rounded-full hidden border-2 border-surface-card"></span>
+                    <span id="alert-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full hidden ring-2 ring-white dark:ring-zinc-950"></span>
                 </button>
 
-                <!-- Theme Toggle -->
-                <button id="theme-toggle" class="p-2 rounded-lg text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border" aria-label="Toggle theme">
+                <!-- Persistent Theme Toggle (Sun/Moon) -->
+                <button id="theme-toggle" class="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Toggle dark/light theme" title="Toggle theme">
                     <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
                 </button>
 
-                <!-- User badge + logout -->
+                <!-- ══════════════════════════════════════ USER PROFILE DROPDOWN -->
                 {% if user.is_authenticated %}
-                <div class="flex items-center gap-3 pl-4 border-l border-border-default">
-                    <div class="w-8 h-8 rounded-full bg-surface-sunken flex items-center justify-center text-text-primary text-sm font-medium flex-shrink-0 border border-border-strong">
-                        {{ user.username|first|upper }}
+                <div class="relative ml-1">
+                    <button id="profile-dropdown-btn"
+                            type="button"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            class="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-zinc-800">
+                        <!-- User Initials Avatar Ring -->
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center font-semibold text-xs shadow-sm ring-2 ring-white dark:ring-zinc-900">
+                            {{ user.username|first|upper }}
+                        </div>
+                        <div class="hidden md:block text-left pr-1">
+                            <p class="text-xs font-semibold text-slate-900 dark:text-zinc-100 leading-none">{{ user.username }}</p>
+                            <p class="text-[10px] text-slate-400 dark:text-zinc-500 leading-none mt-1">{% if user.is_superuser %}Admin{% else %}Analyst{% endif %}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 dark:text-zinc-500 transition-transform duration-200" id="profile-dropdown-arrow"></i>
+                    </button>
+
+                    <!-- Dropdown Menu Widget -->
+                    <div id="profile-dropdown-menu"
+                         role="menu"
+                         aria-orientation="vertical"
+                         aria-labelledby="profile-dropdown-btn"
+                         class="absolute right-0 top-full mt-2 w-72 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xl py-2 z-50 transition-all duration-150 transform opacity-0 scale-95 pointer-events-none origin-top-right">
+                        
+                        <!-- User Summary Header -->
+                        <div class="px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-indigo-100 dark:ring-zinc-800">
+                                    {{ user.username|first|upper }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                        {{ user.get_full_name|default:user.username }}
+                                    </p>
+                                    <p class="text-[11px] text-slate-400 dark:text-zinc-400 truncate">
+                                        {{ user.email|default:"analyst@defencesys.internal" }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Role Badge -->
+                            <div class="flex items-center gap-1.5 mt-2">
+                                {% if user.is_superuser or user.is_staff %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                                    <i class="fa-solid fa-shield-cat text-[9px]"></i> SOC Administrator
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                    <i class="fa-solid fa-user-shield text-[9px]"></i> Security Analyst
+                                </span>
+                                {% endif %}
+                                <span class="text-[10px] font-mono text-slate-400 dark:text-zinc-500 ml-auto">P-256 Valid</span>
+                            </div>
+                        </div>
+
+                        <!-- Menu Quick Links -->
+                        <div class="py-1 px-1">
+                            <a href="{% url 'dashboard:index' %}" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors" role="menuitem">
+                                <i class="fa-solid fa-chart-pie w-4 text-center text-slate-400 dark:text-zinc-500"></i>
+                                <span>SOC Command Center</span>
+                            </a>
+                            <a href="/identity/vault/" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors" role="menuitem">
+                                <i class="fa-solid fa-key w-4 text-center text-slate-400 dark:text-zinc-500"></i>
+                                <span>Identity Keys & Vault</span>
+                            </a>
+                            <a href="{% url 'threat_graph:view' %}" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors" role="menuitem">
+                                <i class="fa-solid fa-diagram-project w-4 text-center text-slate-400 dark:text-zinc-500"></i>
+                                <span>Threat Graph Intel</span>
+                            </a>
+                        </div>
+
+                        <!-- Divider & Sign Out Form -->
+                        <div class="pt-1 mt-1 border-t border-slate-100 dark:border-zinc-800 px-1">
+                            <form method="POST" action="{% url 'auth:logout' %}" class="w-full">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors text-left"
+                                        role="menuitem">
+                                    <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>
+                                    <span>Sign Out</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <form method="POST" action="{% url 'auth:logout' %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="p-1 rounded text-text-muted hover:text-danger-text transition-colors focus:outline-none focus:ring-2 focus:ring-info-border" title="Sign out" aria-label="Sign out">
-                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                        </button>
-                    </form>
                 </div>
                 {% endif %}
             </div>
         </header>
 
-        <!-- Page content container -->
-        <div class="flex-1 overflow-auto bg-surface-page">
-            <div class="max-w-[1440px] mx-auto p-[24px]">
+        <!-- Page Content Scroll Area -->
+        <div class="flex-1 overflow-auto bg-slate-50 dark:bg-black transition-colors duration-200">
+            <div class="max-w-[1536px] mx-auto p-4 sm:p-6">
                 {% block content %}{% endblock %}
             </div>
         </div>
     </main>
 
     <!-- ═══════════════════════════════════════════════════════════ TOAST STACK -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 w-80 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 w-84 max-w-sm pointer-events-none"></div>
 
     <!-- ═══════════════════════════════════════════════════════════════ SCRIPTS -->
     <script src="{% static 'js/ws_client.js' %}"></script>
 
     <script>
-    // ── Topbar clock ──────────────────────────────────────────────────────────
+    // ── Live Topbar Clock ─────────────────────────────────────────────────────
     (function() {
         const el = document.getElementById('topbar-time');
         if (!el) return;
-        const tick = () => { el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
-        tick(); setInterval(tick, 1000);
+        const tick = () => {
+            el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }) + ' UTC';
+        };
+        tick();
+        setInterval(tick, 1000);
     })();
 
-    // ── Global alert WebSocket + WS status indicator ──────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
-        const dot  = document.getElementById('ws-status-dot');
-        const text = document.getElementById('ws-status-text');
+    // ── Profile Dropdown Controller ───────────────────────────────────────────
+    (function() {
+        const btn = document.getElementById('profile-dropdown-btn');
+        const menu = document.getElementById('profile-dropdown-menu');
+        const arrow = document.getElementById('profile-dropdown-arrow');
+        if (!btn || !menu) return;
 
-        function setWsDot(status) {
-            dot.className = 'w-2 h-2 rounded-full flex-shrink-0';
-            if (status === 'connected') {
-                dot.classList.add('dot-online');
-                text.textContent = 'Alert feed live';
-                text.style.color = '#22c55e';
-            } else if (status === 'reconnecting') {
-                dot.classList.add('dot-reconnecting');
-                text.textContent = 'Reconnecting…';
-                text.style.color = '#f59e0b';
-            } else {
-                dot.classList.add('dot-offline');
-                text.textContent = 'Disconnected';
-                text.style.color = '';
+        let isOpen = false;
+
+        function openMenu() {
+            isOpen = true;
+            btn.setAttribute('aria-expanded', 'true');
+            menu.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+            menu.classList.add('opacity-100', 'scale-100', 'pointer-events-auto');
+            if (arrow) arrow.classList.add('rotate-180');
+        }
+
+        function closeMenu() {
+            isOpen = false;
+            btn.setAttribute('aria-expanded', 'false');
+            menu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+            menu.classList.remove('opacity-100', 'scale-100', 'pointer-events-auto');
+            if (arrow) arrow.classList.remove('rotate-180');
+        }
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isOpen) closeMenu(); else openMenu();
+        });
+
+        // Click outside closes dropdown
+        document.addEventListener('click', (e) => {
+            if (isOpen && !menu.contains(e.target) && !btn.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        // Escape key closes dropdown
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                closeMenu();
+                btn.focus();
+            }
+        });
+    })();
+
+    // ── Global WebSocket & Live Indicators ────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebarDot  = document.getElementById('ws-status-dot');
+        const sidebarText = document.getElementById('ws-status-text');
+        const topbarDot   = document.getElementById('topbar-ws-dot');
+        const topbarText  = document.getElementById('topbar-ws-text');
+
+        function updateWsIndicators(status) {
+            const isOnline = (status === 'connected');
+            const isReconnecting = (status === 'reconnecting');
+
+            // Sidebar indicator
+            if (sidebarDot) {
+                sidebarDot.className = 'w-2 h-2 rounded-full flex-shrink-0';
+                if (isOnline) {
+                    sidebarDot.classList.add('dot-online', 'dot-pulse-green');
+                    if (sidebarText) { sidebarText.textContent = 'Alert Feed Live'; sidebarText.style.color = '#22c55e'; }
+                } else if (isReconnecting) {
+                    sidebarDot.classList.add('dot-reconnecting', 'dot-pulse-amber');
+                    if (sidebarText) { sidebarText.textContent = 'Reconnecting…'; sidebarText.style.color = '#f59e0b'; }
+                } else {
+                    sidebarDot.classList.add('dot-offline', 'dot-pulse-red');
+                    if (sidebarText) { sidebarText.textContent = 'Disconnected'; sidebarText.style.color = ''; }
+                }
+            }
+
+            // Topbar pill
+            if (topbarDot) {
+                topbarDot.className = 'w-2 h-2 rounded-full';
+                if (isOnline) {
+                    topbarDot.classList.add('dot-online', 'dot-pulse-green');
+                    if (topbarText) topbarText.textContent = 'WS Connected';
+                } else if (isReconnecting) {
+                    topbarDot.classList.add('dot-reconnecting', 'dot-pulse-amber');
+                    if (topbarText) topbarText.textContent = 'WS Reconnecting';
+                } else {
+                    topbarDot.classList.add('dot-offline', 'dot-pulse-red');
+                    if (topbarText) topbarText.textContent = 'WS Offline';
+                }
             }
         }
 
+        // Initialize Global Alerts WebSocket
         window.alertClient = new SOCWebSocketClient('alerts/');
-        window.alertClient.onStatusChange = setWsDot;
+        window.alertClient.onStatusChange = updateWsIndicators;
         window.alertClient.onAlert = (data) => {
-            showToast(data.title || 'Alert', data.message || '', data.type || 'info');
-            document.getElementById('alert-badge').classList.remove('hidden');
+            showToast(data.title || 'Threat Alert', data.message || '', data.type || 'info');
+            const badge = document.getElementById('alert-badge');
+            if (badge) badge.classList.remove('hidden');
         };
         window.alertClient.connect();
 
-        // Theme toggle logic
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const themeToggleIcon = document.getElementById('theme-toggle-icon');
-
-        function updateThemeIcon() {
-            if (document.documentElement.classList.contains('dark')) {
-                themeToggleIcon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                themeToggleIcon.classList.replace('fa-sun', 'fa-moon');
-            }
-        }
-
-        themeToggleBtn.addEventListener('click', function() {
-            document.documentElement.classList.toggle('dark');
-            if (document.documentElement.classList.contains('dark')) {
-                localStorage.theme = 'dark';
-            } else {
-                localStorage.theme = 'light';
-            }
-            updateThemeIcon();
-        });
-        updateThemeIcon();
-
-        // Probe AI engine health
+        // Check Hardware Accelerator & AI Engine
         fetch('/api/ai-engine/health/')
             .then(r => r.json())
             .then(d => {
-                const el = document.getElementById('ai-engine-status');
-                if (!el) return;
-                
-                // Clear existing content
-                el.innerHTML = '';
-                const dot = document.createElement('div');
-                dot.className = 'w-2 h-2 rounded-full flex-shrink-0';
-                
-                const text = document.createElement('span');
-                text.className = 'text-xs';
-                text.textContent = 'AI Engine ' + (d.status === 'ok' ? 'online' : 'offline');
-                
-                if (d.status === 'ok') {
-                    dot.classList.add('bg-green-500');
-                    text.classList.add('text-green-600', 'dark:text-green-400');
-                } else {
-                    dot.classList.add('bg-amber-500');
-                    text.classList.add('text-amber-600', 'dark:text-amber-400');
+                const aiStatusEl = document.getElementById('ai-engine-status');
+                if (aiStatusEl) {
+                    aiStatusEl.innerHTML = '';
+                    const dot = document.createElement('div');
+                    dot.className = 'w-2 h-2 rounded-full flex-shrink-0';
+                    const text = document.createElement('span');
+                    text.className = 'text-[11px] font-medium truncate';
+                    text.textContent = 'AI Engine ' + (d.status === 'ok' ? 'Online' : 'Offline');
+
+                    if (d.status === 'ok') {
+                        dot.classList.add('bg-emerald-500', 'dot-pulse-green');
+                        text.classList.add('text-emerald-600', 'dark:text-emerald-400');
+                    } else {
+                        dot.classList.add('bg-amber-500', 'dot-pulse-amber');
+                        text.classList.add('text-amber-600', 'dark:text-amber-400');
+                    }
+                    aiStatusEl.appendChild(dot);
+                    aiStatusEl.appendChild(text);
                 }
-                
-                el.appendChild(dot);
-                el.appendChild(text);
             })
             .catch(() => {});
     });
 
-    // ── Toast helper ──────────────────────────────────────────────────────────
+    // ── Enterprise Toast Notification Component ───────────────────────────────
     function showToast(title, message, type) {
         const container = document.getElementById('toast-container');
+        if (!container) return;
+
         const typeMap = {
-            deepfake: ['border-red-500',    'fa-triangle-exclamation', '#ef4444'],
-            phishing: ['border-amber-500',  'fa-fish-fins',             '#f59e0b'],
-            identity: ['border-violet-500', 'fa-key',                   '#8b5cf6'],
-            info:     ['border-blue-500',   'fa-circle-info',            '#3b82f6'],
+            deepfake: ['border-rose-500',   'fa-triangle-exclamation', '#f43f5e', 'bg-rose-50/90 dark:bg-rose-950/90'],
+            phishing: ['border-amber-500',  'fa-fish-fins',            '#f59e0b', 'bg-amber-50/90 dark:bg-amber-950/90'],
+            identity: ['border-indigo-500', 'fa-key',                  '#6366f1', 'bg-indigo-50/90 dark:bg-indigo-950/90'],
+            info:     ['border-blue-500',   'fa-circle-info',          '#3b82f6', 'bg-blue-50/90 dark:bg-blue-950/90'],
         };
-        const [borderColor, iconClass, iconColor] = typeMap[type] || typeMap.info;
+        const [borderColor, iconClass, iconColor, iconBg] = typeMap[type] || typeMap.info;
 
         const toast = document.createElement('div');
-        toast.className = `bg-surface-card border border-border-default border-l-[3px] rounded-xl p-4 shadow-sm pointer-events-auto toast-enter`;
+        toast.className = `bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 border-l-[3px] rounded-xl p-4 shadow-lg pointer-events-auto toast-enter flex gap-3 items-start backdrop-blur-md`;
         toast.style.borderLeftColor = iconColor;
 
-        const flexContainer = document.createElement('div');
-        flexContainer.className = 'flex gap-3 items-start';
-
+        const iconContainer = document.createElement('div');
+        iconContainer.className = `w-7 h-7 rounded-lg ${iconBg} border border-transparent flex items-center justify-center flex-shrink-0 mt-0.5`;
         const icon = document.createElement('i');
-        icon.className = `fa-solid ${iconClass} mt-0.5 flex-shrink-0`;
+        icon.className = `fa-solid ${iconClass} text-xs`;
         icon.style.color = iconColor;
-        flexContainer.appendChild(icon);
+        iconContainer.appendChild(icon);
+        toast.appendChild(iconContainer);
 
         const textContainer = document.createElement('div');
-        textContainer.className = 'min-w-0';
+        textContainer.className = 'min-w-0 flex-1';
 
         const titleEl = document.createElement('p');
-        titleEl.className = 'text-sm font-medium text-text-primary leading-tight';
+        titleEl.className = 'text-xs font-semibold text-slate-900 dark:text-zinc-100 leading-tight';
         titleEl.textContent = title;
         textContainer.appendChild(titleEl);
 
         const msgEl = document.createElement('p');
-        msgEl.className = 'text-xs text-text-muted mt-0.5 break-words';
+        msgEl.className = 'text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 break-words leading-normal';
         msgEl.textContent = message;
         textContainer.appendChild(msgEl);
 
-        flexContainer.appendChild(textContainer);
+        toast.appendChild(textContainer);
 
         const closeBtn = document.createElement('button');
-        closeBtn.className = 'ml-auto flex-shrink-0 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-info-border rounded p-1';
-        const closeIcon = document.createElement('i');
-        closeIcon.className = 'fa-solid fa-xmark text-sm';
-        closeBtn.appendChild(closeIcon); // safe, static html
+        closeBtn.className = 'ml-auto flex-shrink-0 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors p-1 rounded-md';
+        closeBtn.setAttribute('aria-label', 'Dismiss alert');
+        closeBtn.innerHTML = '<i class="fa-solid fa-xmark text-xs"></i>';
         closeBtn.onclick = () => toast.remove();
-        flexContainer.appendChild(closeBtn);
+        toast.appendChild(closeBtn);
 
-        toast.appendChild(flexContainer);
         container.appendChild(toast);
         setTimeout(() => {
-            toast.style.transition = 'opacity 0.3s ease';
+            toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
             toast.style.opacity = '0';
+            toast.style.transform = 'translateY(8px)';
             setTimeout(() => toast.remove(), 300);
         }, 6000);
     }

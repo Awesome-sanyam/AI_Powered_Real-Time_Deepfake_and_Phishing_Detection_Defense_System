@@ -47,6 +47,10 @@ class DashboardView(View):
 
         # Identity keys
         active_keys = IdentityKey.objects.filter(is_revoked=False).count()
+        vault_keys = list(
+            IdentityKey.objects.select_related("user")
+            .order_by("-created_at")[:5]
+        )
 
         total_scans = total_deepfake_sessions + total_phishing_scans
         total_signed = deepfake_signed + phishing_signed
@@ -76,6 +80,7 @@ class DashboardView(View):
             "deepfakes_flagged":  deepfakes_flagged,
             "phishing_blocked":   phishing_blocked,
             "active_keys":        active_keys,
+            "vault_keys":         vault_keys,
             "total_signed":       total_signed,
             "threat_node_count":  threat_node_count,
             "recent_deepfakes":   recent_deepfakes,

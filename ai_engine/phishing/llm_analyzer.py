@@ -113,10 +113,12 @@ def _text_entropy(text: str) -> float:
 
 
 def _keyword_density(text: str, keywords: set) -> float:
-    """Fraction of keyword matches found, capped at 1.0."""
+    """Fraction of keyword matches found with saturation curve (1 hit = 0.7, 2+ hits = 1.0)."""
     lower = text.lower()
     hits = sum(1 for kw in keywords if kw in lower)
-    return min(hits / max(len(keywords), 1), 1.0)
+    if hits == 0:
+        return 0.0
+    return min(0.35 + (hits * 0.35), 1.0)
 
 
 class PhishingAnalyzer:
@@ -340,13 +342,18 @@ class PhishingAnalyzer:
 
         # ── Aggregate: URL 35%, Header 15%, LLM/Heuristic 50% ────────────────
         all_signals = url_signals + header_signals + llm_signals
-        total_confidence = min(
+        weighted_score = (
             (url_risk_score    * 0.35)
             + (header_risk_score * 0.15)
-            + (llm_confidence    * 0.50),
-            1.0,
+            + (llm_confidence    * 0.50)
         )
-        is_phishing = total_confidence > 0.50
+        max_vector = max(url_risk_score, header_risk_score, llm_confidence)
+        if max_vector >= 0.60:
+            total_confidence = min(max(weighted_score, max_vector * 0.85), 1.0)
+        else:
+            total_confidence = min(weighted_score, 1.0)
+
+        is_phishing = total_confidence >= 0.45 or len(all_signals) >= 3
 
         # ── Derive risk level from final confidence ────────────────────────────
         risk_level = (

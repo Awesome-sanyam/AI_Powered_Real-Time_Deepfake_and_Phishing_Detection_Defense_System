@@ -14,7 +14,7 @@ from apps.phishing.views import PhishingScannerView
 from apps.threat_graph.views import ThreatGraphPageView
 
 # Auth views
-from apps.identity.views import login_view, register_view, logout_view
+from apps.identity.views import login_view, register_view, logout_view, IdentityVaultView
 
 # ── Auth URL group ────────────────────────────────────────────────────────────
 auth_patterns = ([
@@ -46,6 +46,9 @@ urlpatterns = [
 
     # Auth
     path("auth/", include(auth_patterns)),
+
+    # Identity Vault UI
+    path("identity/vault/", IdentityVaultView.as_view(), name="identity-vault"),
 
     # API Routes
     path("api/ai-engine/health/", ai_engine_health, name="ai-engine-health"),

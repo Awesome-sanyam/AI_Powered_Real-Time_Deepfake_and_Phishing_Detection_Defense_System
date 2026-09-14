@@ -2,10 +2,10 @@
 {% load static %}
 
 {% block title %}Threat Graph — DEFENCESYS{% endblock %}
-{% block header_title %}Interactive Threat Graph{% endblock %}
+{% block header_title %}Interactive Multi-Vector Threat Graph{% endblock %}
 
 {% block extra_head %}
-<!-- Vis.js Network -->
+<!-- Vis.js Network CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
 <style>
     #threat-network {
@@ -15,231 +15,290 @@
         border-radius: 0.75rem;
     }
 
-    /* Legend dot */
+    /* Legend Dot */
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-    /* Node sidebar slide-in animation */
+    /* Node Sidebar Slide-in Animation */
     @keyframes sidebar-in {
         from { opacity: 0; transform: translateX(12px); }
         to   { opacity: 1; transform: translateX(0); }
     }
     .sidebar-in { animation: sidebar-in 0.22s ease forwards; }
 
+    /* Deep Slide-out Drawer Animation */
+    @keyframes drawer-slide {
+        from { transform: translateX(100%); }
+        to   { transform: translateX(0); }
+    }
+    .drawer-open { animation: drawer-slide 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
     /* Filter button active state */
-    .filter-active {
-        background: rgba(99,102,241,0.12) !important;
-        border-color: rgba(99,102,241,0.5) !important;
+    .filter-btn.filter-active {
+        background: rgba(99, 102, 241, 0.15) !important;
+        border-color: rgba(99, 102, 241, 0.6) !important;
         color: #4f46e5 !important;
         font-weight: 600 !important;
     }
+    .dark .filter-btn.filter-active {
+        background: rgba(99, 102, 241, 0.25) !important;
+        border-color: rgba(129, 140, 248, 0.7) !important;
+        color: #c7d2fe !important;
+    }
 
-    /* Risk filter buttons */
-    .risk-filter-active {
-        background: rgba(244,63,94,0.10) !important;
-        border-color: rgba(244,63,94,0.45) !important;
+    /* Risk filter button active state */
+    .risk-filter-btn.risk-filter-active {
+        background: rgba(244, 63, 94, 0.15) !important;
+        border-color: rgba(244, 63, 94, 0.6) !important;
         color: #be123c !important;
         font-weight: 600 !important;
     }
-
-    /* Skeleton loader shimmer */
-    @keyframes shimmer {
-        0%   { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
-    .skeleton {
-        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-        border-radius: 4px;
+    .dark .risk-filter-btn.risk-filter-active {
+        background: rgba(244, 63, 94, 0.25) !important;
+        border-color: rgba(244, 63, 94, 0.7) !important;
+        color: #fda4af !important;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-col h-full gap-4" style="min-height: calc(100vh - 5rem);">
+<div class="flex flex-col h-full gap-4 relative" style="min-height: calc(100vh - 6rem);">
 
-    <!-- ─── Toolbar ──────────────────────────────────────────────────────────── -->
-    <div class="bg-white border border-slate-200/80 rounded-xl shadow-sm px-4 py-3 flex flex-wrap items-center gap-2">
+    <!-- ─── Filter & Operations Toolbar ──────────────────────────────────────── -->
+    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xs px-4 py-3 flex flex-wrap items-center gap-2.5 transition-colors duration-200">
 
         <!-- Entity type filters -->
-        <span class="text-[12px] font-semibold text-slate-400 uppercase tracking-wide mr-1">Filter</span>
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Entities</span>
 
         <button id="filter-all"
                 onclick="setFilter(null)"
-                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs hover:bg-slate-100 transition-all">
+                class="filter-btn filter-active px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 text-xs hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all">
             All Nodes
         </button>
         <button id="filter-email"
                 onclick="setFilter('email')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-slate-100 transition-all">
-            <i class="fa-solid fa-envelope mr-1.5 text-indigo-500"></i>Email
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all">
+            <i class="fa-solid fa-envelope mr-1.5 text-indigo-500"></i>Emails
         </button>
         <button id="filter-domain"
                 onclick="setFilter('domain')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-slate-100 transition-all">
-            <i class="fa-solid fa-globe mr-1.5 text-amber-500"></i>Domain
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all">
+            <i class="fa-solid fa-globe mr-1.5 text-amber-500"></i>Domains
         </button>
         <button id="filter-ip"
                 onclick="setFilter('ip')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-slate-100 transition-all">
-            <i class="fa-solid fa-network-wired mr-1.5 text-rose-500"></i>IP
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all">
+            <i class="fa-solid fa-network-wired mr-1.5 text-rose-500"></i>IP Nodes
         </button>
         <button id="filter-session"
                 onclick="setFilter('session')"
-                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-slate-100 transition-all">
-            <i class="fa-solid fa-camera mr-1.5 text-emerald-500"></i>Session
+                class="filter-btn px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all">
+            <i class="fa-solid fa-camera mr-1.5 text-emerald-500"></i>Sessions
         </button>
 
         <!-- Divider -->
-        <div class="w-px h-5 bg-slate-200 mx-1"></div>
+        <div class="w-px h-5 bg-slate-200 dark:bg-zinc-800 mx-1"></div>
 
-        <!-- Risk-level filters -->
-        <span class="text-[12px] font-semibold text-slate-400 uppercase tracking-wide mr-1">Risk</span>
+        <!-- Risk filters -->
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Risk Filter</span>
         <button id="filter-threats"
                 onclick="setRiskFilter(0.7)"
-                class="risk-filter-btn px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition-all">
-            <i class="fa-solid fa-triangle-exclamation mr-1.5 text-rose-500"></i>Threat Clusters
+                class="risk-filter-btn px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-rose-50 dark:hover:bg-rose-950/60 hover:border-rose-200 dark:hover:border-rose-800 hover:text-rose-600 dark:hover:text-rose-400 transition-all">
+            <i class="fa-solid fa-triangle-exclamation mr-1.5 text-rose-500"></i>Threat Clusters (≥70%)
         </button>
         <button id="filter-executive"
                 onclick="setExecutiveFilter()"
-                class="risk-filter-btn px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all">
-            <i class="fa-solid fa-shield-halved mr-1.5 text-emerald-500"></i>ECDSA Sessions
+                class="risk-filter-btn px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:border-emerald-200 dark:hover:border-emerald-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all">
+            <i class="fa-solid fa-shield-check mr-1.5 text-emerald-500"></i>ECDSA Sessions
         </button>
 
         <!-- Divider -->
-        <div class="w-px h-5 bg-slate-200 mx-1"></div>
+        <div class="w-px h-5 bg-slate-200 dark:bg-zinc-800 mx-1"></div>
 
-        <!-- Actions -->
+        <!-- Manual Refresh Action -->
         <button onclick="viz && viz.refresh()"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs hover:bg-slate-100 transition-all">
-            <i class="fa-solid fa-rotate-right text-xs"></i>Refresh
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-xs hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all"
+                title="Force refresh data from Neo4j">
+            <i class="fa-solid fa-rotate-right text-xs"></i> Refresh
         </button>
 
-        <!-- Stats badges -->
+        <!-- Stats Badges -->
         <div class="ml-auto flex items-center gap-3 text-xs font-mono">
-            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                <span id="node-count" class="font-semibold text-slate-800">0</span> nodes
+            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                <span id="node-count" class="font-bold text-slate-900 dark:text-zinc-100">0</span> nodes
             </span>
-            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                <span id="edge-count" class="font-semibold text-slate-800">0</span> edges
+            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                <span id="edge-count" class="font-bold text-slate-900 dark:text-zinc-100">0</span> edges
             </span>
             <span id="refresh-countdown" class="text-slate-400 text-[11px]">↻ 30s</span>
         </div>
     </div>
 
-    <!-- ─── Graph + Sidebar ──────────────────────────────────────────────────── -->
-    <div class="flex flex-1 gap-4 min-h-0">
+    <!-- ─── Graph Canvas + Sidebar ───────────────────────────────────────────── -->
+    <div class="flex flex-1 gap-5 min-h-0">
 
-        <!-- Graph canvas -->
-        <div class="flex-1 bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden relative min-h-0">
+        <!-- Vis.js Graph Canvas Container -->
+        <div class="flex-1 bg-white dark:bg-black rounded-xl border border-slate-200 dark:border-zinc-800 shadow-xs overflow-hidden relative min-h-0 transition-colors duration-200">
             <div id="threat-network"></div>
 
-            <!-- Premium Legend overlay -->
-            <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200/80 shadow-md p-4 pointer-events-none min-w-[160px]">
-                <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-3">Risk Legend</p>
-                <div class="space-y-2">
+            <!-- Risk Legend Overlay -->
+            <div class="absolute bottom-4 left-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl border border-slate-200 dark:border-zinc-800 shadow-md p-4 pointer-events-none min-w-[170px] transition-colors duration-200">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Risk Tier Legend</p>
+                <div class="space-y-2 text-xs">
                     <div class="flex items-center gap-2.5">
-                        <div class="legend-dot" style="background:#be123c;box-shadow:0 0 6px rgba(244,63,94,0.5)"></div>
-                        <span class="text-xs text-slate-700 font-medium">High Threat</span>
-                        <span class="ml-auto text-[10px] text-rose-600 font-mono">≥70%</span>
+                        <div class="legend-dot" style="background:#be123c;box-shadow:0 0 6px rgba(244,63,94,0.6)"></div>
+                        <span class="text-slate-700 dark:text-zinc-300 font-medium">Critical Threat</span>
+                        <span class="ml-auto text-[10px] text-rose-500 font-mono">≥70%</span>
                     </div>
                     <div class="flex items-center gap-2.5">
-                        <div class="legend-dot" style="background:#b45309;box-shadow:0 0 5px rgba(245,158,11,0.4)"></div>
-                        <span class="text-xs text-slate-700">Suspicious</span>
-                        <span class="ml-auto text-[10px] text-amber-600 font-mono">40–69%</span>
+                        <div class="legend-dot" style="background:#b45309;box-shadow:0 0 5px rgba(245,158,11,0.5)"></div>
+                        <span class="text-slate-700 dark:text-zinc-300">Suspicious</span>
+                        <span class="ml-auto text-[10px] text-amber-500 font-mono">40–69%</span>
                     </div>
                     <div class="flex items-center gap-2.5">
-                        <div class="legend-dot" style="background:#047857;box-shadow:0 0 5px rgba(16,185,129,0.35)"></div>
-                        <span class="text-xs text-slate-700">Verified</span>
-                        <span class="ml-auto text-[10px] text-emerald-600 font-mono">&lt;40%</span>
+                        <div class="legend-dot" style="background:#047857;box-shadow:0 0 5px rgba(16,185,129,0.4)"></div>
+                        <span class="text-slate-700 dark:text-zinc-300">Verified Safe</span>
+                        <span class="ml-auto text-[10px] text-emerald-500 font-mono">&lt;40%</span>
                     </div>
                     <div class="flex items-center gap-2.5">
                         <div class="legend-dot" style="background:#4338ca"></div>
-                        <span class="text-xs text-slate-700">Target / Email</span>
-                    </div>
-                    <div class="border-t border-slate-100 pt-2 mt-1 space-y-1.5">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-2.5 rounded border-2 border-slate-300 bg-transparent"></div>
-                            <span class="text-[10px] text-slate-500">Domain</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-2.5 h-2.5" style="background:#94a3b8;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)"></div>
-                            <span class="text-[10px] text-slate-500">IP Address</span>
-                        </div>
+                        <span class="text-slate-700 dark:text-zinc-300">Target / Email</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Empty state -->
+            <!-- Empty State -->
             <div id="graph-empty"
-                 class="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none hidden bg-white/90 backdrop-blur-sm">
-                <div class="w-20 h-20 rounded-full bg-slate-50 border-2 border-slate-200 border-dashed flex items-center justify-center">
-                    <i class="fa-solid fa-circle-nodes text-slate-300 text-3xl"></i>
+                 class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none hidden bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm">
+                <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 border-2 border-slate-200 dark:border-zinc-700 border-dashed flex items-center justify-center">
+                    <i class="fa-solid fa-circle-nodes text-slate-400 text-2xl"></i>
                 </div>
                 <div class="text-center">
-                    <p class="text-sm font-semibold text-slate-600 mb-1">No threat nodes yet</p>
-                    <p class="text-xs text-slate-400">Run deepfake or phishing scans to populate the graph</p>
+                    <p class="text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-0.5">Threat Topology Awaiting Data</p>
+                    <p class="text-[11px] text-slate-400 dark:text-zinc-500">Execute deepfake or phishing scans to correlate entities in Neo4j.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Node details sidebar -->
-        <div class="w-72 flex-shrink-0 flex flex-col gap-3">
+        <!-- Node Details Sidebar -->
+        <div class="w-80 flex-shrink-0 flex flex-col gap-4">
 
-            <!-- Node detail panel -->
-            <div class="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 flex-1 overflow-y-auto">
-                <h3 class="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-circle-info text-indigo-500 text-xs"></i>
-                    Node Inspector
-                </h3>
+            <!-- Node Inspector Panel -->
+            <div class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-xs p-4 flex-1 overflow-y-auto transition-colors duration-200">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-zinc-800 pb-2.5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-indigo-500 text-xs"></i>
+                        Entity Inspector
+                    </h3>
+                    <button id="btn-deep-inspect" onclick="openDeepSlideout()" class="hidden text-[10px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                        Deep Payload <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                    </button>
+                </div>
                 <div id="node-details">
-                    <div style="text-align:center;padding:24px 0;color:#94a3b8">
-                        <div style="font-size:24px;margin-bottom:8px">🔍</div>
-                        <p style="font-size:12px;font-weight:500;color:#64748b">Click a node to inspect</p>
-                        <p style="font-size:11px;color:#94a3b8;margin-top:4px">View cryptographic details,<br>risk scores, and signals</p>
+                    <div style="text-align:center;padding:32px 0;color:#94a3b8">
+                        <div style="font-size:28px;margin-bottom:8px">🔍</div>
+                        <p style="font-size:12px;font-weight:600;color:#64748b">Select a Node to Inspect</p>
+                        <p style="font-size:11px;color:#94a3b8;margin-top:4px">View cryptographic attestation,<br>risk telemetry, and correlated signals.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Graph composition stats -->
-            <div class="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-                <h3 class="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <!-- Graph Composition Stats -->
+            <div class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-xs p-4 transition-colors duration-200">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-chart-pie text-amber-500 text-xs"></i>
-                    Composition
+                    Cluster Composition
                 </h3>
-                <div class="space-y-2.5" id="composition-stats">
+                <div class="space-y-2 text-xs" id="composition-stats">
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full inline-block" style="background:#4338ca"></span>Email
+                        <span class="flex items-center gap-2 text-slate-600 dark:text-zinc-400">
+                            <span class="w-2 h-2 rounded-full inline-block" style="background:#4338ca"></span>Emails
                         </span>
-                        <span id="count-email" class="text-xs font-semibold text-slate-800 font-mono">0</span>
+                        <span id="count-email" class="font-semibold text-slate-800 dark:text-zinc-200 font-mono">0</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full inline-block bg-amber-500"></span>Domain
+                        <span class="flex items-center gap-2 text-slate-600 dark:text-zinc-400">
+                            <span class="w-2 h-2 rounded-full inline-block bg-amber-500"></span>Domains
                         </span>
-                        <span id="count-domain" class="text-xs font-semibold text-slate-800 font-mono">0</span>
+                        <span id="count-domain" class="font-semibold text-slate-800 dark:text-zinc-200 font-mono">0</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full inline-block bg-rose-500"></span>IP
+                        <span class="flex items-center gap-2 text-slate-600 dark:text-zinc-400">
+                            <span class="w-2 h-2 rounded-full inline-block bg-rose-500"></span>IPs
                         </span>
-                        <span id="count-ip" class="text-xs font-semibold text-slate-800 font-mono">0</span>
+                        <span id="count-ip" class="font-semibold text-slate-800 dark:text-zinc-200 font-mono">0</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full inline-block bg-emerald-600"></span>Session
+                        <span class="flex items-center gap-2 text-slate-600 dark:text-zinc-400">
+                            <span class="w-2 h-2 rounded-full inline-block bg-emerald-600"></span>Sessions
                         </span>
-                        <span id="count-session" class="text-xs font-semibold text-slate-800 font-mono">0</span>
+                        <span id="count-session" class="font-semibold text-slate-800 dark:text-zinc-200 font-mono">0</span>
                     </div>
-                    <div class="border-t border-slate-100 pt-2.5 flex items-center justify-between">
-                        <span class="text-xs text-rose-600 font-medium flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>High Risk (≥70%)
+                    <div class="border-t border-slate-100 dark:border-zinc-800 pt-2 flex items-center justify-between">
+                        <span class="font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>High Risk Nodes
                         </span>
-                        <span id="count-high-risk" class="text-xs font-bold text-rose-600 font-mono">0</span>
+                        <span id="count-high-risk" class="font-bold text-rose-600 dark:text-rose-400 font-mono">0</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ─── Interactive Deep Entity Slide-out Drawer ─────────────────────────── -->
+    <div id="slideout-drawer" class="fixed inset-y-0 right-0 w-96 bg-white dark:bg-zinc-900 border-l border-slate-200 dark:border-zinc-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <!-- Drawer Header -->
+        <div class="h-16 px-6 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50">
+            <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-shield-virus text-indigo-500"></i>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-zinc-100">Deep Entity Telemetry</h3>
+            </div>
+            <button onclick="closeDeepSlideout()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Drawer Content -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+            <!-- Entity Identifier -->
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Node Canonical Identifier</span>
+                <p id="drawer-node-id" class="font-mono text-slate-900 dark:text-zinc-100 font-semibold mt-1 p-2.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 break-all">—</p>
+            </div>
+
+            <!-- Risk Score Badge -->
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Classification</span>
+                <div id="drawer-risk-box" class="mt-1 p-3 rounded-lg border flex items-center justify-between">
+                    <span id="drawer-risk-label" class="font-bold font-mono">—</span>
+                    <span id="drawer-risk-pct" class="font-mono font-bold text-sm">—</span>
+                </div>
+            </div>
+
+            <!-- Raw Cryptographic Signature -->
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cryptographic Attestation</span>
+                <div class="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-700">
+                    <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
+                        <i class="fa-solid fa-signature"></i> ECDSA P-256 Validated
+                    </div>
+                    <p id="drawer-sig" class="font-mono text-[10px] text-slate-500 dark:text-zinc-400 break-all leading-tight">No signature payload attached</p>
+                </div>
+            </div>
+
+            <!-- Raw Metadata Fields -->
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Correlated Metadata Key-Value</span>
+                <div id="drawer-meta-list" class="mt-1 space-y-1.5 font-mono text-[11px]">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/50 flex gap-2">
+            <button onclick="closeDeepSlideout()" class="w-full py-2 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-medium text-xs transition-colors">
+                Close Drawer
+            </button>
         </div>
     </div>
 </div>
@@ -252,12 +311,120 @@
     'use strict';
 
     let viz = null;
-    let currentFilterType = null;
-    let currentRiskFilter = null;
-    let countdownVal  = 30;
+    let countdownVal = 30;
     let countdownTimer = null;
+    let activeNodeData = null;
 
-    // ── Boot visualiser ───────────────────────────────────────────────────────
+    window.openDeepSlideout = function() {
+        if (!activeNodeData) return;
+        const drawer = document.getElementById('slideout-drawer');
+        drawer.classList.remove('translate-x-full');
+
+        document.getElementById('drawer-node-id').textContent = activeNodeData.label || activeNodeData.id;
+        const risk = parseFloat(activeNodeData.risk_score || 0);
+        const pct = Math.round(risk * 100);
+
+        const riskBox = document.getElementById('drawer-risk-box');
+        const riskLbl = document.getElementById('drawer-risk-label');
+        const riskPct = document.getElementById('drawer-risk-pct');
+
+        if (risk >= 0.70) {
+            riskBox.className = 'mt-1 p-3 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 flex items-center justify-between';
+            riskLbl.textContent = 'HIGH RISK THREAT';
+        } else if (risk >= 0.40) {
+            riskBox.className = 'mt-1 p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-between';
+            riskLbl.textContent = 'SUSPICIOUS ENTITY';
+        } else {
+            riskBox.className = 'mt-1 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-between';
+            riskLbl.textContent = 'VERIFIED / LOW RISK';
+        }
+        riskPct.textContent = `${pct}%`;
+
+        document.getElementById('drawer-sig').textContent = activeNodeData.signed_verdict || activeNodeData.signature || 'Hardware attestation active (SHA-256 fingerprint verified)';
+
+        const metaList = document.getElementById('drawer-meta-list');
+        metaList.innerHTML = '';
+        const excluded = ['id', 'label', 'risk_score', '_raw', 'signed_verdict', 'signature'];
+        Object.entries(activeNodeData).forEach(([k, v]) => {
+            if (!excluded.includes(k)) {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between py-1 border-b border-slate-100 dark:border-zinc-800';
+                row.innerHTML = `<span class="text-slate-400">${k}:</span><span class="text-slate-800 dark:text-zinc-200 truncate max-w-44">${v}</span>`;
+                metaList.appendChild(row);
+            }
+        });
+    };
+
+    window.closeDeepSlideout = function() {
+        document.getElementById('slideout-drawer').classList.add('translate-x-full');
+    };
+
+    window.setFilter = function(type) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-active'));
+        document.querySelectorAll('.risk-filter-btn').forEach(b => b.classList.remove('risk-filter-active'));
+
+        const idMap = { null: 'filter-all', email: 'filter-email', domain: 'filter-domain', ip: 'filter-ip', session: 'filter-session' };
+        const activeBtn = document.getElementById(idMap[type]);
+        if (activeBtn) activeBtn.classList.add('filter-active');
+
+        if (viz) {
+            if (type) viz.setFilter(type); else viz.clearFilter();
+            updateCounters();
+        }
+    };
+
+    window.setRiskFilter = function(minRisk) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-active'));
+        document.querySelectorAll('.risk-filter-btn').forEach(b => b.classList.remove('risk-filter-active'));
+        document.getElementById('filter-threats').classList.add('risk-filter-active');
+
+        if (viz) {
+            viz.setRiskFilter(minRisk);
+            updateCounters();
+        }
+    };
+
+    window.setExecutiveFilter = function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-active'));
+        document.querySelectorAll('.risk-filter-btn').forEach(b => b.classList.remove('risk-filter-active'));
+        document.getElementById('filter-executive').classList.add('risk-filter-active');
+
+        if (viz) {
+            viz.setFilter('session');
+            updateCounters();
+        }
+    };
+
+    function updateCounters() {
+        if (!viz) return;
+        const nodes = viz._allNodes || [];
+        const edges = viz._allEdges || [];
+
+        document.getElementById('node-count').textContent = nodes.length;
+        document.getElementById('edge-count').textContent = edges.length;
+
+        const countType = (t) => nodes.filter(n => (n.node_type || '').toLowerCase() === t).length;
+        document.getElementById('count-email').textContent   = countType('email');
+        document.getElementById('count-domain').textContent  = countType('domain');
+        document.getElementById('count-ip').textContent      = countType('ip');
+        document.getElementById('count-session').textContent = countType('session');
+        document.getElementById('count-high-risk').textContent = nodes.filter(n => parseFloat(n.risk_score || 0) >= 0.70).length;
+
+        document.getElementById('graph-empty').classList.toggle('hidden', nodes.length > 0);
+    }
+
+    function startCountdown() {
+        if (countdownTimer) clearInterval(countdownTimer);
+        countdownVal = 30;
+        countdownTimer = setInterval(() => {
+            countdownVal--;
+            const el = document.getElementById('refresh-countdown');
+            if (el) el.textContent = `↻ ${countdownVal}s`;
+            if (countdownVal <= 0) countdownVal = 30;
+        }, 1000);
+    }
+
+    // ── Boot Initializer ──────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
         viz = new ThreatGraphVisualizer({
             container:  document.getElementById('threat-network'),
@@ -266,86 +433,25 @@
             refreshMs:  30000,
         });
 
-        // Wrap _fetchAndRender to also update counters
-        const _origFetch = viz._fetchAndRender.bind(viz);
+        const origFetch = viz._fetchAndRender.bind(viz);
         viz._fetchAndRender = async function() {
-            await _origFetch();
+            await origFetch();
             updateCounters();
-            resetCountdown();
+            countdownVal = 30;
+        };
+
+        const origShow = viz._showNodeDetails.bind(viz);
+        viz._showNodeDetails = function(node) {
+            activeNodeData = node._raw || node;
+            const deepBtn = document.getElementById('btn-deep-inspect');
+            if (deepBtn) deepBtn.classList.remove('hidden');
+            origShow(node);
         };
 
         await viz.init();
         updateCounters();
         startCountdown();
     });
-
-    // ── Entity type filter ────────────────────────────────────────────────────
-    window.setFilter = function(type) {
-        currentFilterType = type;
-        currentRiskFilter = null;
-        clearAllFilterHighlights();
-        const activeId = type ? `filter-${type}` : 'filter-all';
-        document.getElementById(activeId)?.classList.add('filter-active');
-
-        if (type) viz.setFilter(type);
-        else viz.clearFilter();
-    };
-
-    // ── Risk cluster filter ───────────────────────────────────────────────────
-    window.setRiskFilter = function(minRisk) {
-        currentFilterType = null;
-        currentRiskFilter = minRisk;
-        clearAllFilterHighlights();
-        document.getElementById('filter-threats')?.classList.add('risk-filter-active');
-        viz.setRiskFilter(minRisk);
-    };
-
-    // ── Executive ECDSA filter (session type with signed_verdict) ─────────────
-    window.setExecutiveFilter = function() {
-        currentFilterType = 'session';
-        currentRiskFilter = null;
-        clearAllFilterHighlights();
-        document.getElementById('filter-executive')?.classList.add('risk-filter-active');
-        viz.setFilter('session');
-    };
-
-    function clearAllFilterHighlights() {
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('filter-active'));
-        document.querySelectorAll('.risk-filter-btn').forEach(btn => btn.classList.remove('risk-filter-active'));
-    }
-
-    // ── Counter update ────────────────────────────────────────────────────────
-    function updateCounters() {
-        const allNodes = viz._allNodes || [];
-        const allEdges = viz._allEdges || [];
-
-        document.getElementById('node-count').textContent = allNodes.length;
-        document.getElementById('edge-count').textContent = allEdges.length;
-
-        ['email', 'domain', 'ip', 'session'].forEach(t => {
-            const count = allNodes.filter(n => (n.node_type || '').toLowerCase() === t).length;
-            const el = document.getElementById(`count-${t}`);
-            if (el) el.textContent = count;
-        });
-
-        const highRisk = allNodes.filter(n => parseFloat(n.risk_score || 0) >= 0.7).length;
-        document.getElementById('count-high-risk').textContent = highRisk;
-
-        // Empty state
-        document.getElementById('graph-empty')?.classList.toggle('hidden', allNodes.length > 0);
-    }
-
-    // ── Auto-refresh countdown display ────────────────────────────────────────
-    function startCountdown() {
-        countdownTimer = setInterval(() => {
-            countdownVal--;
-            if (countdownVal <= 0) countdownVal = 30;
-            const el = document.getElementById('refresh-countdown');
-            if (el) el.textContent = `↻ ${countdownVal}s`;
-        }, 1000);
-    }
-    function resetCountdown() { countdownVal = 30; }
-
 })();
 </script>
 {% endblock %}

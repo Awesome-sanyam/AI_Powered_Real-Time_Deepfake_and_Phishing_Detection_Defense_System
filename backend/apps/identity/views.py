@@ -10,9 +10,11 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
-
+from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.utils.decorators import method_decorator
+from django.views import View
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
@@ -22,6 +24,24 @@ from .services import generate_key_pair_for_user
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+@method_decorator(login_required, name="dispatch")
+class IdentityVaultView(View):
+    """GET /identity/vault/ — Dedicated Identity Keys & Cryptographic Attestation Vault page."""
+
+    template_name = "identity/vault.html"
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        user_keys = IdentityKey.objects.filter(user=request.user).order_by("-created_at")
+        active_key = user_keys.filter(is_revoked=False).first()
+        total_keys = user_keys.count()
+
+        return render(request, self.template_name, {
+            "user_keys": user_keys,
+            "active_key": active_key,
+            "total_keys": total_keys,
+        })
 
 
 # ── HTML Auth Views ────────────────────────────────────────────────────────────

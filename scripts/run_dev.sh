@@ -52,8 +52,9 @@ export AI_ENGINE_BASE_URL=http://localhost:8001
 export PYTHONUNBUFFERED=1
 
 # Optimize Apple Silicon MPS PyTorch memory allocation
-# Leaves ~30% unified memory for other services (Neo4j, Postgres, Daphne)
+# In PyTorch on macOS, setting high watermark requires low watermark <= high watermark.
 export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.7
+export PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5
 
 # ── GGUF model path — absolute so uvicorn subprocess sees it ─────────────────
 export GGUF_MODEL_PATH="$REPO_ROOT/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf"

@@ -330,32 +330,71 @@ class WebcamStreamManager {
         ctx.strokeRect(2, 2, w - 4, h - 4);
         ctx.shadowBlur = 0;
 
-        // FPS counter (top-left)
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(8, 8, 80, 24);
+        // FPS counter + Resolution badge (top-left)
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.fillRect(8, 8, 160, 26);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, 8, 160, 26);
+
+        // Green live dot
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(18, 21, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`${this._displayFps} FPS`, 28, 25);
+
+        // Resolution
+        const resText = (this._videoEl && this._videoEl.videoWidth)
+            ? `${this._videoEl.videoWidth}x${this._videoEl.videoHeight}`
+            : '720p HD';
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '13px monospace';
-        ctx.fillText(`${this._displayFps} FPS`, 14, 25);
+        ctx.font = '10px monospace';
+        ctx.fillText(resText, 92, 25);
 
         // Confidence badge (top-right)
         if (v) {
-            const label = isFake ? '⚠ FAKE' : '✓ REAL';
+            const label = isFake ? '⚠ FAKE' : '✓ AUTHENTIC';
             const badgeColor = isFake ? '#ef4444' : '#22c55e';
-            const badgeW = 90;
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(w - badgeW - 8, 8, badgeW, 24);
+            const badgeW = 125;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(w - badgeW - 8, 8, badgeW, 26);
+            ctx.strokeStyle = badgeColor;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(w - badgeW - 8, 8, badgeW, 26);
+
             ctx.fillStyle = badgeColor;
-            ctx.font = 'bold 13px monospace';
-            ctx.fillText(`${label} ${Math.round(confidence * 100)}%`, w - badgeW - 2, 25);
+            ctx.font = 'bold 11px monospace';
+            ctx.fillText(`${label} ${Math.round(confidence * 100)}%`, w - badgeW + 6, 25);
         }
 
-        // ECDSA badge (bottom-right)
+        // Animated ECDSA Cryptographic Attestation Badge (bottom-right)
         if (v && v.signed_verdict) {
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(w - 132, h - 32, 124, 22);
-            ctx.fillStyle = '#60a5fa';
-            ctx.font = '11px monospace';
-            ctx.fillText('🔐 ECDSA VERIFIED', w - 128, h - 16);
+            const pulse = (Math.sin(Date.now() / 250) + 1) / 2; // 0 to 1 wave
+            const badgeW = 168;
+            const badgeH = 26;
+            const bx = w - badgeW - 8;
+            const by = h - badgeH - 8;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(bx, by, badgeW, badgeH);
+
+            ctx.strokeStyle = `rgba(99, 102, 241, ${0.4 + pulse * 0.5})`;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(bx, by, badgeW, badgeH);
+
+            // Pulsing blue dot
+            ctx.fillStyle = '#818cf8';
+            ctx.beginPath();
+            ctx.arc(bx + 12, by + 13, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#c7d2fe';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('VERIFIED_BY_ECDSA', bx + 22, by + 17);
         }
     }
 

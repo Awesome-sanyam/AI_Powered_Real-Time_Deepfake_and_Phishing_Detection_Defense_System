@@ -34,7 +34,7 @@ if os.environ.get("POSTGRES_HOST"):
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "soc_password"),
             "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
             "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-            "CONN_MAX_AGE": 60,
+            "CONN_MAX_AGE": 0,
             "OPTIONS": {"connect_timeout": 5},
         }
     }
