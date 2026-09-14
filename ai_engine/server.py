@@ -260,6 +260,7 @@ async def scan_frame(file: UploadFile = File(...)) -> dict:
 # ── POST /scan/deepfake ───────────────────────────────────────────────────────
 
 @app.post("/scan/deepfake", summary="Full cross-modal deepfake analysis")
+@app.post("/scan/deepfake-file", summary="Full cross-modal deepfake analysis (file scan)")
 async def scan_deepfake(request: DeepfakeScanRequest) -> dict:
     """
     Full cross-modal deepfake analysis using all three detectors:

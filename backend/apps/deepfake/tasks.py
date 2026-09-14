@@ -232,10 +232,21 @@ def analyze_deepfake_file_async(
         }
 
         with httpx.Client(timeout=120.0) as client:
-            response = client.post(
-                f"{AI_ENGINE_BASE_URL}/scan/deepfake",
-                json=payload,
-            )
+            try:
+                response = client.post(
+                    f"{AI_ENGINE_BASE_URL}/scan/deepfake-file",
+                    json=payload,
+                )
+                if response.status_code != 200:
+                    response = client.post(
+                        f"{AI_ENGINE_BASE_URL}/scan/deepfake",
+                        json=payload,
+                    )
+            except Exception:
+                response = client.post(
+                    f"{AI_ENGINE_BASE_URL}/scan/deepfake",
+                    json=payload,
+                )
             response.raise_for_status()
             verdict = response.json()
 

@@ -301,9 +301,14 @@ class DeepfakeUploadScanView(APIView):
             try:
                 with httpx.Client(timeout=60.0) as client:
                     resp = client.post(
-                        f"{settings.AI_ENGINE_BASE_URL}/scan/deepfake",
+                        f"{settings.AI_ENGINE_BASE_URL}/scan/deepfake-file",
                         json=payload,
                     )
+                    if resp.status_code != 200:
+                        resp = client.post(
+                            f"{settings.AI_ENGINE_BASE_URL}/scan/deepfake",
+                            json=payload,
+                        )
                     if resp.status_code == 200:
                         verdict = resp.json()
             except Exception as exc:
