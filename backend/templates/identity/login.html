@@ -1,124 +1,164 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="transition-colors duration-200">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In — DEFENCESYS</title>
+
+    <!-- Tailwind Config & Engine -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+                    }
+                }
+            }
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Theme Switcher (Immediate execute in head) -->
+    <script src="{% static 'js/theme_toggle.js' %}"></script>
+
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
 
-        /* Light base */
-        :root {
-            --bg:      #f8fafc;
-            --surface: #ffffff;
-            --border:  #e2e8f0;
-            --accent:  #3b82f6;
-            --text:    #0f172a;
-            --muted:   #64748b;
+        /* Subtle grid background */
+        .bg-grid-pattern {
+            background-size: 36px 36px;
+            background-image: 
+                linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+        }
+        .dark .bg-grid-pattern {
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
         }
 
-        @keyframes slide-up {
+        @keyframes card-rise {
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slide-in-err {
-            from { opacity: 0; transform: translateY(-8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .card-enter { animation: slide-up 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
-        .error-enter { animation: slide-in-err 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
-
-        .input-field {
-            width: 100%;
-            padding: 0.625rem 0.875rem;
-            border: 1.5px solid var(--border);
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text);
-            background: var(--surface);
-            transition: border-color 0.15s, box-shadow 0.15s;
-            outline: none;
-        }
-        .input-field:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
-        }
-        .btn-primary {
-            width: 100%;
-            padding: 0.625rem;
-            background: #2563eb;
-            color: white;
-            font-weight: 600;
-            font-size: 0.875rem;
-            border-radius: 0.5rem;
-            border: none;
-            cursor: pointer;
-            transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-        }
-        .btn-primary:hover  { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
-        .btn-primary:active { transform: scale(0.98); }
+        .card-enter { animation: card-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
     </style>
 </head>
-<body style="background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors duration-200">
 
-    <div class="card-enter w-full" style="max-width: 400px;">
+    <!-- Ambient glow & grid accents -->
+    <div class="absolute inset-0 bg-grid-pattern pointer-events-none z-0"></div>
+    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 dark:bg-indigo-600/15 blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-violet-500/10 dark:bg-violet-600/15 blur-3xl pointer-events-none z-0"></div>
 
-        <!-- Logo mark -->
-        <div style="text-align:center; margin-bottom:2rem;">
-            <div style="display:inline-flex; align-items:center; justify-content:center; width:3rem; height:3rem; background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:0.75rem; margin-bottom:0.75rem;">
-                <i class="fa-solid fa-shield-halved" style="color:#3b82f6; font-size:1.25rem;"></i>
+    <!-- Top Navigation Controls -->
+    <div class="absolute top-5 right-5 z-20 flex items-center gap-3">
+        <button id="theme-toggle-btn"
+                class="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 shadow-sm hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                aria-label="Toggle dark/light theme"
+                title="Toggle theme">
+            <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
+        </button>
+    </div>
+
+    <!-- Card Container -->
+    <div class="card-enter max-w-md w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 rounded-2xl shadow-xl p-8 backdrop-blur-md relative z-10 transition-colors duration-200">
+
+        <!-- Header & Brand Logo -->
+        <div class="flex flex-col items-center text-center mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-zinc-800 border border-indigo-200 dark:border-zinc-700 flex items-center justify-center shadow-sm mb-3">
+                <i class="fa-solid fa-shield-halved text-indigo-600 dark:text-indigo-400 text-xl"></i>
             </div>
-            <h1 style="font-size:1.125rem; font-weight:700; letter-spacing:-0.01em;">DEFENCE<span style="color:#3b82f6;">SYS</span></h1>
-            <p style="font-size:0.8rem; color:var(--muted); margin-top:0.25rem;">AI Security Platform — SOC Login</p>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+                DEFENCE<span class="text-indigo-600 dark:text-indigo-400">SYS</span>
+            </h1>
+            <p class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-zinc-500 mt-0.5">
+                SOC · Tier-1 Security Operations
+            </p>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-2">
+                Sign in to access your security intelligence command center
+            </p>
         </div>
 
-        <!-- Card -->
-        <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:1rem; padding:2rem; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+        <!-- Error Alert -->
+        {% if error %}
+        <div class="flex items-center gap-3 p-3.5 mb-6 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs shadow-xs">
+            <i class="fa-solid fa-circle-exclamation text-rose-500 flex-shrink-0 text-sm"></i>
+            <span class="font-medium">{{ error }}</span>
+        </div>
+        {% endif %}
 
-            <h2 style="font-size:1.125rem; font-weight:600; margin-bottom:0.375rem;">Sign in to your account</h2>
-            <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1.5rem;">Enter your credentials to access the SOC Dashboard.</p>
+        <!-- Form -->
+        <form method="POST" action="{% url 'auth:login' %}{% if next %}?next={{ next }}{% endif %}" class="space-y-4" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
 
-            {% if error %}
-            <div class="error-enter" style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
-                <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
-                <span>{{ error }}</span>
-            </div>
-            {% endif %}
-
-            <form method="POST" action="{% url 'auth:login' %}{% if next %}?next={{ next }}{% endif %}" novalidate>
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ next }}">
-
-                <div style="margin-bottom:1rem;">
-                    <label for="username" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Username</label>
-                    <input id="username" name="username" type="text" autocomplete="username"
-                           class="input-field" placeholder="your_username" required>
-                </div>
-
-                <div style="margin-bottom:1.5rem;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.375rem;">
-                        <label for="password" style="font-size:0.8rem; font-weight:500;">Password</label>
+            <div>
+                <label for="username" class="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    Analyst Username
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500 text-xs">
+                        <i class="fa-solid fa-user-shield"></i>
                     </div>
-                    <input id="password" name="password" type="password" autocomplete="current-password"
-                           class="input-field" placeholder="••••••••" required>
+                    <input id="username"
+                           name="username"
+                           type="text"
+                           autocomplete="username"
+                           required
+                           class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/50 border border-slate-300 dark:border-zinc-700/60 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-xs"
+                           placeholder="your_username">
                 </div>
+            </div>
 
-                <button type="submit" class="btn-primary">
-                    <i class="fa-solid fa-arrow-right-to-bracket" style="margin-right:0.375rem;"></i>
-                    Sign in
-                </button>
-            </form>
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label for="password" class="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                        Password
+                    </label>
+                </div>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500 text-xs">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <input id="password"
+                           name="password"
+                           type="password"
+                           autocomplete="current-password"
+                           required
+                           class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/50 border border-slate-300 dark:border-zinc-700/60 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-xs"
+                           placeholder="••••••••">
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg transition-all transform active:scale-95 text-xs flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 mt-2">
+                <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+                <span>Sign in to SOC Dashboard</span>
+            </button>
+        </form>
+
+        <!-- Register Link -->
+        <div class="mt-6 pt-5 border-t border-slate-100 dark:border-zinc-800 text-center">
+            <p class="text-xs text-slate-500 dark:text-zinc-400">
+                No analyst account yet?
+                <a href="{% url 'auth:register' %}" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline ml-1">Create one</a>
+            </p>
         </div>
 
-        <!-- Register link -->
-        <p style="text-align:center; font-size:0.8rem; color:var(--muted); margin-top:1.25rem;">
-            No account yet?
-            <a href="{% url 'auth:register' %}" style="color:#3b82f6; font-weight:500; text-decoration:none;">Create one</a>
-        </p>
+        <!-- Hardware Security Telemetry Footer -->
+        <div class="flex items-center justify-center gap-2 mt-4 text-[11px] font-mono text-slate-400 dark:text-zinc-500">
+            <i class="fa-solid fa-lock text-[10px] text-emerald-500"></i>
+            <span>Hardware Attested · ECDSA SECP256R1 Active</span>
+        </div>
     </div>
 
 </body>

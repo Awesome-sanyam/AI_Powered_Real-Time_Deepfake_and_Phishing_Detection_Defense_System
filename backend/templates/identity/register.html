@@ -1,151 +1,208 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="transition-colors duration-200">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account — DEFENCESYS</title>
+
+    <!-- Tailwind Config & Engine -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+                    }
+                }
+            }
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Theme Switcher (Immediate execute in head) -->
+    <script src="{% static 'js/theme_toggle.js' %}"></script>
+
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
-        :root {
-            --bg:      #f8fafc;
-            --surface: #ffffff;
-            --border:  #e2e8f0;
-            --accent:  #3b82f6;
-            --text:    #0f172a;
-            --muted:   #64748b;
+
+        /* Subtle grid background */
+        .bg-grid-pattern {
+            background-size: 36px 36px;
+            background-image: 
+                linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
         }
-        @keyframes slide-up {
+        .dark .bg-grid-pattern {
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        @keyframes card-rise {
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slide-in-err {
-            from { opacity: 0; transform: translateY(-8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .card-enter { animation: slide-up 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
-        .error-enter { animation: slide-in-err 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
-        .input-field {
-            width: 100%;
-            padding: 0.625rem 0.875rem;
-            border: 1.5px solid var(--border);
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text);
-            background: var(--surface);
-            transition: border-color 0.15s, box-shadow 0.15s;
-            outline: none;
-        }
-        .input-field:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
-        }
-        .input-field.error-field {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
-        }
-        .field-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
-        .btn-primary {
-            width: 100%;
-            padding: 0.625rem;
-            background: #2563eb;
-            color: white;
-            font-weight: 600;
-            font-size: 0.875rem;
-            border-radius: 0.5rem;
-            border: none;
-            cursor: pointer;
-            transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-        }
-        .btn-primary:hover  { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
-        .btn-primary:active { transform: scale(0.98); }
-        .pw-strength-bar { height: 3px; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+        .card-enter { animation: card-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
     </style>
 </head>
-<body style="background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;">
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors duration-200">
 
-    <div class="card-enter w-full" style="max-width:420px;">
+    <!-- Ambient glow & grid accents -->
+    <div class="absolute inset-0 bg-grid-pattern pointer-events-none z-0"></div>
+    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 dark:bg-indigo-600/15 blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-violet-500/10 dark:bg-violet-600/15 blur-3xl pointer-events-none z-0"></div>
 
-        <!-- Logo -->
-        <div style="text-align:center; margin-bottom:2rem;">
-            <div style="display:inline-flex; align-items:center; justify-content:center; width:3rem; height:3rem; background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:0.75rem; margin-bottom:0.75rem;">
-                <i class="fa-solid fa-shield-halved" style="color:#3b82f6; font-size:1.25rem;"></i>
+    <!-- Top Navigation Controls -->
+    <div class="absolute top-5 right-5 z-20 flex items-center gap-3">
+        <button id="theme-toggle-btn"
+                class="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 shadow-sm hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                aria-label="Toggle dark/light theme"
+                title="Toggle theme">
+            <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
+        </button>
+    </div>
+
+    <!-- Card Container -->
+    <div class="card-enter max-w-md w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 rounded-2xl shadow-xl p-8 backdrop-blur-md relative z-10 transition-colors duration-200">
+
+        <!-- Header & Brand Logo -->
+        <div class="flex flex-col items-center text-center mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-zinc-800 border border-indigo-200 dark:border-zinc-700 flex items-center justify-center shadow-sm mb-3">
+                <i class="fa-solid fa-shield-halved text-indigo-600 dark:text-indigo-400 text-xl"></i>
             </div>
-            <h1 style="font-size:1.125rem; font-weight:700; letter-spacing:-0.01em;">DEFENCE<span style="color:#3b82f6;">SYS</span></h1>
-            <p style="font-size:0.8rem; color:var(--muted); margin-top:0.25rem;">Create your SOC analyst account</p>
-        </div>
-
-        <!-- Card -->
-        <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:1rem; padding:2rem; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
-
-            <h2 style="font-size:1.125rem; font-weight:600; margin-bottom:0.375rem;">Create Account</h2>
-            <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1.5rem;">
-                An ECDSA P-256 identity key will be generated automatically on registration.
+            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+                DEFENCE<span class="text-indigo-600 dark:text-indigo-400">SYS</span>
+            </h1>
+            <p class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-zinc-500 mt-0.5">
+                Create SOC Analyst Account
             </p>
-
-            {% if error %}
-            <div class="error-enter" style="display:flex; align-items:center; gap:0.5rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#dc2626;">
-                <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
-                <span>{{ error }}</span>
-            </div>
-            {% endif %}
-
-            <form id="register-form" method="POST" action="{% url 'auth:register' %}" novalidate>
-                {% csrf_token %}
-
-                <div style="margin-bottom:1rem;">
-                    <label for="username" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Username</label>
-                    <input id="username" name="username" type="text" autocomplete="username"
-                           class="input-field" placeholder="min. 3 characters" required minlength="3">
-                    <p class="field-hint">Your unique SOC analyst handle.</p>
-                </div>
-
-                <div style="margin-bottom:1rem;">
-                    <label for="email" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Email <span style="color:var(--muted); font-weight:400;">(optional)</span></label>
-                    <input id="email" name="email" type="email" autocomplete="email"
-                           class="input-field" placeholder="analyst@soc.local">
-                </div>
-
-                <div style="margin-bottom:1rem;">
-                    <label for="password" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Password</label>
-                    <input id="password" name="password" type="password" autocomplete="new-password"
-                           class="input-field" placeholder="min. 8 characters" required minlength="8"
-                           oninput="updateStrength(this.value)">
-                    <!-- Strength bar -->
-                    <div style="background:#f1f5f9; border-radius:2px; margin-top:0.5rem; overflow:hidden;">
-                        <div id="pw-strength-bar" class="pw-strength-bar" style="width:0%; background:#ef4444;"></div>
-                    </div>
-                    <p id="pw-strength-label" class="field-hint"></p>
-                </div>
-
-                <div style="margin-bottom:1.5rem;">
-                    <label for="password_confirm" style="display:block; font-size:0.8rem; font-weight:500; margin-bottom:0.375rem;">Confirm Password</label>
-                    <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password"
-                           class="input-field" placeholder="Repeat your password" required
-                           oninput="checkMatch()">
-                    <p id="pw-match-hint" class="field-hint"></p>
-                </div>
-
-                <button type="submit" id="submit-btn" class="btn-primary">
-                    <i class="fa-solid fa-key" style="margin-right:0.375rem;"></i>
-                    Create Account & Generate ECDSA Key
-                </button>
-            </form>
-
-            <!-- ECDSA info blurb -->
-            <div style="margin-top:1.25rem; padding:0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.5rem; font-size:0.75rem; color:var(--muted); display:flex; gap:0.5rem;">
-                <i class="fa-solid fa-circle-info flex-shrink-0" style="color:#3b82f6; margin-top:1px;"></i>
-                <span>Your <strong style="color:#0f172a;">ECDSA P-256</strong> keypair is generated server-side. The public key is stored; your session provides signing authority. All AI verdicts are cryptographically signed.</span>
-            </div>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-2">
+                An ECDSA P-256 identity keypair is generated automatically on registration
+            </p>
         </div>
 
-        <p style="text-align:center; font-size:0.8rem; color:var(--muted); margin-top:1.25rem;">
-            Already have an account?
-            <a href="{% url 'auth:login' %}" style="color:#3b82f6; font-weight:500; text-decoration:none;">Sign in</a>
-        </p>
+        <!-- Error Alert -->
+        {% if error %}
+        <div class="flex items-center gap-3 p-3.5 mb-6 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs shadow-xs">
+            <i class="fa-solid fa-circle-exclamation text-rose-500 flex-shrink-0 text-sm"></i>
+            <span class="font-medium">{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Form -->
+        <form id="register-form" method="POST" action="{% url 'auth:register' %}" class="space-y-4" novalidate>
+            {% csrf_token %}
+
+            <div>
+                <label for="username" class="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    Analyst Handle / Username
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500 text-xs">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <input id="username"
+                           name="username"
+                           type="text"
+                           autocomplete="username"
+                           required
+                           minlength="3"
+                           class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/50 border border-slate-300 dark:border-zinc-700/60 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-xs"
+                           placeholder="analyst_handle">
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-zinc-500 mt-1">Minimum 3 alphanumeric characters.</p>
+            </div>
+
+            <div>
+                <label for="email" class="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    Email Address <span class="text-slate-400 dark:text-zinc-500 font-normal">(optional)</span>
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500 text-xs">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <input id="email"
+                           name="email"
+                           type="email"
+                           autocomplete="email"
+                           class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/50 border border-slate-300 dark:border-zinc-700/60 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-xs"
+                           placeholder="analyst@soc.internal">
+                </div>
+            </div>
+
+            <div>
+                <label for="password" class="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    Password
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500 text-xs">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <input id="password"
+                           name="password"
+                           type="password"
+                           autocomplete="new-password"
+                           required
+                           minlength="8"
+                           oninput="updateStrength(this.value)"
+                           class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/50 border border-slate-300 dark:border-zinc-700/60 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-xs"
+                           placeholder="Minimum 8 characters">
+                </div>
+                <!-- Strength bar -->
+                <div class="h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full mt-2 overflow-hidden">
+                    <div id="pw-strength-bar" class="h-full bg-rose-500 transition-all duration-300" style="width: 0%;"></div>
+                </div>
+                <p id="pw-strength-label" class="text-[11px] text-slate-500 dark:text-zinc-500 mt-1"></p>
+            </div>
+
+            <div>
+                <label for="password_confirm" class="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    Confirm Password
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500 text-xs">
+                        <i class="fa-solid fa-lock-open"></i>
+                    </div>
+                    <input id="password_confirm"
+                           name="password_confirm"
+                           type="password"
+                           autocomplete="new-password"
+                           required
+                           oninput="checkMatch()"
+                           class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/50 border border-slate-300 dark:border-zinc-700/60 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-xs"
+                           placeholder="Repeat your password">
+                </div>
+                <p id="pw-match-hint" class="text-[11px] mt-1"></p>
+            </div>
+
+            <button type="submit"
+                    id="submit-btn"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg transition-all transform active:scale-95 text-xs flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 mt-2">
+                <i class="fa-solid fa-key text-xs"></i>
+                <span>Create Account & Generate ECDSA Key</span>
+            </button>
+        </form>
+
+        <!-- ECDSA Attestation Security Blurb -->
+        <div class="mt-5 p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800 text-[11px] text-slate-500 dark:text-zinc-400 flex items-start gap-2.5">
+            <i class="fa-solid fa-fingerprint text-indigo-500 flex-shrink-0 mt-0.5 text-xs"></i>
+            <span>Your <strong class="text-slate-800 dark:text-zinc-200">ECDSA P-256</strong> keypair is generated server-side. Your session provides signing authority, and all AI verdicts are cryptographically signed.</span>
+        </div>
+
+        <!-- Login Link -->
+        <div class="mt-6 pt-5 border-t border-slate-100 dark:border-zinc-800 text-center">
+            <p class="text-xs text-slate-500 dark:text-zinc-400">
+                Already have an analyst account?
+                <a href="{% url 'auth:login' %}" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline ml-1">Sign in</a>
+            </p>
+        </div>
     </div>
 
     <script>
@@ -169,7 +226,7 @@
         ];
         const [pct, color, label] = levels[score];
         bar.style.width      = `${pct}%`;
-        bar.style.background = color;
+        bar.style.backgroundColor = color;
         lbl.textContent      = label;
         lbl.style.color      = color;
         checkMatch();
@@ -179,33 +236,43 @@
         const pw  = document.getElementById('password').value;
         const cnf = document.getElementById('password_confirm').value;
         const hint = document.getElementById('pw-match-hint');
+        const cnfInput = document.getElementById('password_confirm');
         
-        if (!cnf) { hint.textContent = ''; return; }
+        if (!cnf) { 
+            hint.textContent = ''; 
+            cnfInput.classList.remove('border-rose-500', 'border-emerald-500');
+            return; 
+        }
         if (pw === cnf) {
             hint.textContent = '✓ Passwords match';
-            hint.style.color = '#22c55e';
-            document.getElementById('password_confirm').classList.remove('error-field');
+            hint.className = 'text-[11px] mt-1 text-emerald-600 dark:text-emerald-400';
+            cnfInput.classList.remove('border-rose-500');
+            cnfInput.classList.add('border-emerald-500');
         } else {
             hint.textContent = '✗ Passwords do not match';
-            hint.style.color = '#ef4444';
-            document.getElementById('password_confirm').classList.add('error-field');
+            hint.className = 'text-[11px] mt-1 text-rose-600 dark:text-rose-400';
+            cnfInput.classList.remove('border-emerald-500');
+            cnfInput.classList.add('border-rose-500');
         }
     }
     
     document.getElementById('register-form').addEventListener('submit', function(e) {
         const pw  = document.getElementById('password').value;
         const cnf = document.getElementById('password_confirm').value;
+        const pwInput = document.getElementById('password');
+        const cnfInput = document.getElementById('password_confirm');
         
         if (pw.length < 8) {
             e.preventDefault();
-            document.getElementById('password').classList.add('error-field');
-            document.getElementById('pw-strength-label').textContent = 'Password must be at least 8 characters.';
-            document.getElementById('pw-strength-label').style.color = '#ef4444';
+            pwInput.classList.add('border-rose-500');
+            const lbl = document.getElementById('pw-strength-label');
+            lbl.textContent = 'Password must be at least 8 characters.';
+            lbl.style.color = '#ef4444';
         }
         
         if (pw !== cnf) {
             e.preventDefault();
-            document.getElementById('password_confirm').classList.add('error-field');
+            cnfInput.classList.add('border-rose-500');
             checkMatch();
         }
     });
