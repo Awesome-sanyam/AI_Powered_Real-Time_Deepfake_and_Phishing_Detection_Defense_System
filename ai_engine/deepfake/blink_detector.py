@@ -153,17 +153,22 @@ class BlinkRateDetector:
         blink_in_progress = False
 
         for frame in frames:
-            gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = self._detector(gray, 0)
-            if not faces:
+            try:
+                gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = self._detector(gray, 0)
+                if not faces:
+                    continue
+                shape = self._predictor(gray, faces[0])
+                ear   = self._compute_ear(shape)
+                if ear < self.ear_threshold and not blink_in_progress:
+                    blink_count += 1
+                    blink_in_progress = True
+                elif ear >= self.ear_threshold:
+                    blink_in_progress = False
+            except (IndexError, KeyError, RuntimeError) as exc:
+                # Partial face occlusion or landmark extraction failure — skip frame
+                logger.debug("Blink detector skipped frame: %s", exc)
                 continue
-            shape = self._predictor(gray, faces[0])
-            ear   = self._compute_ear(shape)
-            if ear < self.ear_threshold and not blink_in_progress:
-                blink_count += 1
-                blink_in_progress = True
-            elif ear >= self.ear_threshold:
-                blink_in_progress = False
 
         duration_minutes = len(frames) / (fps * 60.0)
         bpm = (blink_count / duration_minutes) if duration_minutes > 0 else 0.0

@@ -63,14 +63,23 @@ class DashboardView(View):
             .values("session_id", "risk_level", "confidence", "created_at")[:5]
         )
 
+        # Neo4j threat node count (best-effort — graceful fallback)
+        threat_node_count = 0
+        try:
+            from apps.threat_graph.graph_client import count_threat_nodes
+            threat_node_count = count_threat_nodes()
+        except Exception:
+            pass  # Neo4j offline is non-critical
+
         return render(request, self.template_name, {
-            "total_scans":       total_scans,
-            "deepfakes_flagged": deepfakes_flagged,
-            "phishing_blocked":  phishing_blocked,
-            "active_keys":       active_keys,
-            "total_signed":      total_signed,
-            "recent_deepfakes":  recent_deepfakes,
-            "recent_phishing":   recent_phishing,
+            "total_scans":        total_scans,
+            "deepfakes_flagged":  deepfakes_flagged,
+            "phishing_blocked":   phishing_blocked,
+            "active_keys":        active_keys,
+            "total_signed":       total_signed,
+            "threat_node_count":  threat_node_count,
+            "recent_deepfakes":   recent_deepfakes,
+            "recent_phishing":    recent_phishing,
         })
 
 

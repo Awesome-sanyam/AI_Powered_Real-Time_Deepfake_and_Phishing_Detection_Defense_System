@@ -67,37 +67,103 @@
         .nav-active {
             color: #1C1C1A;
             border-left: 2px solid #1C1C1A;
+            background: rgba(0,0,0,0.04);
         }
 
-        /* ── Animated status dot ──────────────────────────────────────── */
+        /* ── Animated status dot (live pulse ring) ────────────────────── */
         @keyframes pulse-live {
-            0%   { box-shadow: 0 0 0 0   rgba(99, 153, 34, 0.6); }
-            70%  { box-shadow: 0 0 0 4px rgba(99, 153, 34, 0);   }
-            100% { box-shadow: 0 0 0 0   rgba(99, 153, 34, 0);   }
+            0%   { box-shadow: 0 0 0 0   rgba(34,197,94, 0.65); }
+            70%  { box-shadow: 0 0 0 5px rgba(34,197,94, 0);    }
+            100% { box-shadow: 0 0 0 0   rgba(34,197,94, 0);    }
+        }
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0px rgba(99,153,34,0.7), 0 0 0 0px rgba(99,153,34,0.3); }
+            60%  { box-shadow: 0 0 0 4px rgba(99,153,34,0.0), 0 0 0 8px rgba(99,153,34,0.0); }
+            100% { box-shadow: 0 0 0 0px rgba(99,153,34,0.7), 0 0 0 0px rgba(99,153,34,0.3); }
         }
         .live-dot {
-            animation: pulse-live 1.5s infinite;
+            animation: pulse-live 1.8s cubic-bezier(0.4,0,0.6,1) infinite;
         }
-        .dot-online { background-color: #22c55e; }
+        .live-ring {
+            animation: pulse-ring 2s cubic-bezier(0.4,0,0.6,1) infinite;
+        }
+        .dot-online       { background-color: #22c55e; }
         .dot-reconnecting { background-color: #f59e0b; }
-        .dot-offline { background-color: #ef4444; }
+        .dot-offline      { background-color: #ef4444; }
 
         /* ── Toast slide-in ───────────────────────────────────────────── */
         @keyframes slide-in {
             from { transform: translateX(120%); opacity: 0; }
             to   { transform: translateX(0);    opacity: 1; }
         }
-        .toast-enter { animation: slide-in 0.3s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .toast-enter { animation: slide-in 0.32s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+        /* ── Skeleton shimmer loader ──────────────────────────────────── */
+        @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position:  200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+        .skeleton-text { height: 0.875rem; }
+        .skeleton-title { height: 1.25rem; width: 60%; }
 
         /* ── Scrollbar ────────────────────────────────────────────────── */
         ::-webkit-scrollbar       { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: #F0EFEC; }
         ::-webkit-scrollbar-thumb { background: #CFCDC5; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #B0ADA5; }
 
-        /* ── Hover/Focus transitions ─────────────────────────────── */
+        /* ── Hover/Focus transitions ──────────────────────────────────── */
         a, button, input {
             transition: all 0.15s ease-out;
         }
+
+        /* ── Premium card hover ───────────────────────────────────────── */
+        .card-hover {
+            transition: box-shadow 0.2s ease, transform 0.15s ease;
+        }
+        .card-hover:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            transform: translateY(-1px);
+        }
+
+        /* ── Glowing status badge ─────────────────────────────────────── */
+        .status-badge-live {
+            position: relative;
+        }
+        .status-badge-live::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(99,153,34,0.1));
+            z-index: -1;
+        }
+
+        /* ── Password strength indicator ──────────────────────────────── */
+        @keyframes fade-in-down {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-error { animation: fade-in-down 0.25s ease forwards; }
+
+        /* ── Dark mode overrides ──────────────────────────────────────── */
+        .dark body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        .dark .bg-surface-card  { background-color: #1e293b !important; }
+        .dark .bg-surface-page  { background-color: #0f172a !important; }
+        .dark .bg-surface-sunken { background-color: #0f172a !important; }
+        .dark .border-border-default { border-color: #334155 !important; }
+        .dark .text-text-primary  { color: #f1f5f9 !important; }
+        .dark .text-text-secondary { color: #94a3b8 !important; }
+        .dark .text-text-muted    { color: #64748b !important; }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -162,8 +228,8 @@
     <!-- ════════════════════════════════════════════════════════ MAIN CONTENT -->
     <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
 
-        <!-- Top bar -->
-        <header class="h-[64px] bg-surface-card border-b border-border-default flex items-center justify-between px-6 z-10 flex-shrink-0">
+        <!-- Top bar with backdrop blur -->
+        <header class="h-[64px] bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between px-6 z-10 flex-shrink-0 shadow-sm sticky top-0">
             <h1 class="text-[22px] font-medium text-text-primary">{% block header_title %}Overview{% endblock %}</h1>
 
             <div class="flex items-center gap-4">
@@ -176,9 +242,9 @@
                 <!-- Live clock -->
                 <span id="topbar-time" class="text-caption font-mono hidden sm:block text-text-muted"></span>
 
-                <!-- MPS status pill -->
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption bg-info-bg text-info-text border border-info-border">
-                    <span class="w-1.5 h-1.5 rounded-full bg-info-text live-dot inline-block"></span>
+                <!-- MPS status pill with glow -->
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption bg-emerald-50 text-emerald-700 border border-emerald-200 status-badge-live">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-ring inline-block"></span>
                     MPS Active
                 </span>
 

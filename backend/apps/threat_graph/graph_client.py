@@ -255,3 +255,21 @@ def write_scan_result_to_graph(
         to_label=session_id,
         to_type="session",
     )
+
+
+def count_threat_nodes() -> int:
+    """
+    Return total count of ThreatNode entities in Neo4j.
+    Returns 0 gracefully if Neo4j is offline or py2neo unavailable.
+    Used by the Dashboard view to populate the Threat Node Count stat.
+    """
+    graph = _get_graph()
+    if graph is None:
+        return 0
+    try:
+        result = graph.run("MATCH (n:ThreatNode) RETURN count(n) AS total").data()
+        if result:
+            return int(result[0].get("total", 0))
+    except Exception as exc:
+        logger.warning("count_threat_nodes() failed (non-critical): %s", exc)
+    return 0

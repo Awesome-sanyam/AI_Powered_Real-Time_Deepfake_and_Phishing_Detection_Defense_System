@@ -121,17 +121,22 @@ class LipSyncVerifier:
             return np.zeros(len(frames), dtype=np.float32)
 
         for frame in frames:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            h = gray.shape[0]
-            faces = self._detector(gray, 0)  # 0 = no upsampling (fast)
-            if faces:
-                shape = self._predictor(gray, faces[0])
-                upper = shape.part(_DLIB_UPPER_LIP)
-                lower = shape.part(_DLIB_LOWER_LIP)
-                # Normalise by frame height
-                aperture = abs(lower.y - upper.y) / (h + 1e-8)
-                apertures.append(float(aperture))
-            else:
+            try:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                h = gray.shape[0]
+                faces = self._detector(gray, 0)  # 0 = no upsampling (fast)
+                if faces:
+                    shape = self._predictor(gray, faces[0])
+                    upper = shape.part(_DLIB_UPPER_LIP)
+                    lower = shape.part(_DLIB_LOWER_LIP)
+                    # Normalise by frame height
+                    aperture = abs(lower.y - upper.y) / (h + 1e-8)
+                    apertures.append(float(aperture))
+                else:
+                    apertures.append(0.0)
+            except (IndexError, KeyError, RuntimeError, AttributeError) as exc:
+                # Partial face occlusion or landmark extraction failure — use 0
+                logger.debug("LipSync: skipped frame due to landmark error: %s", exc)
                 apertures.append(0.0)
 
         return np.array(apertures, dtype=np.float32)

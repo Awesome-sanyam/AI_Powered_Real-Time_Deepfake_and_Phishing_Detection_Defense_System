@@ -110,12 +110,12 @@ class CrossModalVerificationEngine:
     """
 
     WEIGHTS: dict[str, float] = {
-        "visual":    0.40,
-        "lip_sync":  0.30,
-        "blink":     0.20,
-        "audio":     0.10,
+        "visual":    0.40,   # MobileNetV2 ImageNet backbone (fp16 MPS)
+        "lip_sync":  0.35,   # FaceLandmarker + Librosa cross-correlation (>80ms = suspicious)
+        "blink":     0.25,   # FaceLandmarker EAR blink counter (<8 or >30 BPM = suspicious)
     }
     FAKE_THRESHOLD: float = 0.55
+    LIP_SYNC_THRESHOLD_MS: float = 80.0   # milliseconds — flagged if delay exceeds this
 
     def __init__(
         self,
@@ -143,14 +143,12 @@ class CrossModalVerificationEngine:
         visual_score: float,
         lip_sus: bool,
         blink_sus: bool,
-        audio_anomalous: bool,
     ) -> float:
         """Compute weighted deepfake confidence in [0, 1]."""
         return float(np.clip(
             self.WEIGHTS["visual"]   * visual_score
             + self.WEIGHTS["lip_sync"] * (1.0 if lip_sus else 0.0)
-            + self.WEIGHTS["blink"]    * (1.0 if blink_sus else 0.0)
-            + self.WEIGHTS["audio"]    * (1.0 if audio_anomalous else 0.0),
+            + self.WEIGHTS["blink"]    * (1.0 if blink_sus else 0.0),
             0.0, 1.0,
         ))
 
@@ -190,12 +188,12 @@ class CrossModalVerificationEngine:
         # 3. Blink rate analysis (FaceLandmarker VIDEO mode — separate instance)
         blink_bpm, blink_sus = self.blink.compute_blink_rate(frames, fps)
 
-        # 4. Audio anomaly detection (MFCC silence + flat energy)
+        # 4. Audio anomaly detection (advisory signal — not in primary weights)
         audio_report = self.audio_analyzer.detect_anomaly(audio_bytes)
-        audio_anomalous = audio_report.get("is_anomalous", False)
+        _ = audio_report.get("is_anomalous", False)  # advisory only; weights removed
 
-        # 5. Confidence aggregation
-        conf = self._confidence(mean_score, lip_sus, blink_sus, audio_anomalous)
+        # 5. Confidence aggregation (audio is advisory-only; not in primary weights)
+        conf = self._confidence(mean_score, lip_sus, blink_sus)
         is_fake = conf >= self.FAKE_THRESHOLD
 
         # 6. ECDSA signing
@@ -217,11 +215,19 @@ class CrossModalVerificationEngine:
             frame_results=[
                 FrameAnalysisResult(
                     frame_index=i,
-                    visual_artifact_score=scores[i],
+                    visual_artifact_score=scores[i] if i < len(scores) else 0.0,
                     lip_sync_delay_ms=lip_delay,
                     blink_rate_bpm=blink_bpm,
-                    is_suspicious=(scores[i] > 0.5 or lip_sus or blink_sus),
-                    confidence=self._confidence(scores[i], lip_sus, blink_sus, audio_anomalous),
+                    is_suspicious=(
+                        (scores[i] > 0.5 if i < len(scores) else False)
+                        or lip_sus
+                        or blink_sus
+                    ),
+                    confidence=self._confidence(
+                        scores[i] if i < len(scores) else 0.0,
+                        lip_sus,
+                        blink_sus,
+                    ),
                 )
                 for i in range(len(frames))
             ],
