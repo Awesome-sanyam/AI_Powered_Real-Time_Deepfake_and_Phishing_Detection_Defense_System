@@ -27,7 +27,7 @@ from .tasks import analyze_deepfake_async
 
 logger = logging.getLogger(__name__)
 
-FRAME_BUFFER_SIZE = 25   # Accumulate 1 second of frames before dispatching
+FRAME_BUFFER_SIZE = 12   # Accumulate 1 second of frames at 12 FPS before dispatching
 
 
 class DeepfakeStreamConsumer(AsyncWebsocketConsumer):

@@ -142,6 +142,11 @@
                             class="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         <i class="fa-solid fa-stop text-xs"></i> Stop
                     </button>
+                    <button id="btn-demo-stream"
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600/15 hover:bg-violet-600/25 text-violet-700 dark:text-violet-300 border border-violet-500/30 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-xs"
+                            title="Simulate a real-time live feed to test the full AI engine pipeline without requiring a physical camera">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Simulate Live Feed
+                    </button>
                     <label class="flex items-center gap-2 cursor-pointer select-none ml-auto text-xs text-slate-600 dark:text-zinc-400">
                         <input type="checkbox" id="audio-toggle" checked class="rounded text-indigo-600 focus:ring-indigo-500">
                         <span>Capture Audio for Lip-Sync</span>
@@ -488,7 +493,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/webcam_stream.js' %}"></script>
+<script src="{% static 'js/webcam_stream.js' %}?v=3.2.0"></script>
 <script>
 (function() {
     'use strict';
@@ -515,8 +520,9 @@
         const confPctEl = document.getElementById('conf-pct');
         const latEl     = document.getElementById('verdict-latency');
 
-        if (v.processing_time_ms) {
-            latEl.textContent = `${Math.round(v.processing_time_ms)}ms Latency`;
+        const procTime = v.processing_time_ms !== undefined ? v.processing_time_ms : v.processing_ms;
+        if (procTime !== undefined && latEl) {
+            latEl.textContent = `${Math.round(procTime)}ms Latency`;
         }
 
         icon.innerHTML = '';
@@ -620,22 +626,30 @@
     const hudResCount  = document.getElementById('hud-resolution-counter');
 
     let streamController = null;
+    const StreamClass = window.WebcamStreamController || window.WebcamStreamManager;
 
-    if (typeof WebcamStreamController !== 'undefined') {
-        streamController = new WebcamStreamController({
+    if (typeof StreamClass !== 'undefined') {
+        streamController = new StreamClass({
             videoElement: videoElem,
             hudCanvas: hudCanvas,
+            captureAudio: document.getElementById('audio-toggle') ? document.getElementById('audio-toggle').checked : true,
             onVerdict: renderVerdict,
             onStatusChange: (st) => {
                 renderStreamStatus(st);
+                const sessBadge = document.getElementById('session-badge');
                 if (st === 'streaming') {
                     placeholder.classList.add('hidden');
                     hudOverlay.classList.remove('hidden');
                     setCameraButtons(true);
+                    if (sessBadge && streamController && streamController.sessionId) {
+                        sessBadge.textContent = `SESSION: ${streamController.sessionId.slice(0, 8)}…`;
+                        sessBadge.classList.remove('hidden');
+                    }
                 } else {
                     if (st === 'stopped') {
                         placeholder.classList.remove('hidden');
                         hudOverlay.classList.add('hidden');
+                        if (sessBadge) sessBadge.classList.add('hidden');
                     }
                     setCameraButtons(false);
                 }
@@ -643,13 +657,59 @@
             onFpsUpdate: (fps, res) => {
                 if (hudFpsCount) hudFpsCount.textContent = `${fps} FPS`;
                 if (hudResCount && res) hudResCount.textContent = res;
+                const resBadge = document.getElementById('hud-res-badge');
+                if (resBadge && res) resBadge.textContent = `Resolution: ${res}`;
             }
         });
     }
 
-    document.getElementById('btn-start').addEventListener('click', () => {
-        if (streamController) streamController.start();
+    const audioToggle = document.getElementById('audio-toggle');
+    if (audioToggle) {
+        audioToggle.addEventListener('change', (e) => {
+            if (streamController) {
+                streamController.captureAudio = e.target.checked;
+            }
+        });
+    }
+
+    document.getElementById('btn-start').addEventListener('click', async () => {
+        if (!streamController) return;
+        const btnStart = document.getElementById('btn-start');
+        btnStart.disabled = true;
+        try {
+            if (audioToggle) streamController.captureAudio = audioToggle.checked;
+            await streamController.start();
+        } catch (err) {
+            console.warn('[Monitor] Hardware camera failed:', err);
+            setCameraButtons(false);
+            if (window.showToast) {
+                showToast('Camera Unavailable', `${err.message || err.name}. You can click "Simulate Live Feed" to test!`, 'warning');
+            } else {
+                alert(`Camera unavailable (${err.message}). Try the "Simulate Live Feed" button.`);
+            }
+        }
     });
+
+    const btnDemo = document.getElementById('btn-demo-stream');
+    if (btnDemo) {
+        btnDemo.addEventListener('click', async () => {
+            if (!streamController) return;
+            btnDemo.disabled = true;
+            try {
+                await streamController.startSyntheticStream();
+                if (window.showToast) {
+                    showToast('Simulation Feed Active', 'Simulated 12 FPS live feed streaming to AI Engine', 'success');
+                }
+            } catch (err) {
+                console.error('[Monitor] Synthetic stream error:', err);
+                setCameraButtons(false);
+                if (window.showToast) {
+                    showToast('Simulation Failed', err.message, 'error');
+                }
+            }
+        });
+    }
+
     document.getElementById('btn-pause').addEventListener('click', () => {
         if (streamController) streamController.pause();
     });
@@ -659,6 +719,8 @@
 
     function setCameraButtons(running) {
         document.getElementById('btn-start').disabled = running;
+        const btnD = document.getElementById('btn-demo-stream');
+        if (btnD) btnD.disabled = running;
         document.getElementById('btn-pause').disabled = !running;
         document.getElementById('btn-stop').disabled  = !running;
     }
