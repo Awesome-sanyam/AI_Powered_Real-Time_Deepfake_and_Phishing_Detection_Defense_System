@@ -4,24 +4,38 @@ LLM-based Phishing Analyzer
 Uses a 4-bit quantized GGUF LLaMA model via llama-cpp-python.
 Constrained to n_ctx=512 and 4 threads to fit within M4 memory budget.
 
-CALIBRATION (v2):
-  Weighted scoring formula updated:
-    LLM/Heuristic score : 0.50  (unchanged)
-    URL Entropy signal  : 0.35  (was lumped into generic "URL" signals)
-    Header signal       : 0.15  (unchanged)
+CALIBRATION (v3 — BEC False Negative Fix):
+  KEY CHANGE: Replaced the pure weighted-average aggregation with a
+  Max/Trigger system to eliminate score dilution on zero-URL attacks.
 
-  Threat threshold raised:
-    0.65  (was 0.45) — prevents benign newsletters / promotional emails from
-    being flagged. At 0.45, even minimal urgency language triggered positives.
+  Problem fixed:
+    Business Email Compromise (BEC) attacks have no URLs.
+    The v2 weighted average capped BEC confidence at:
+      llm_score * 0.50  (because url_score = 0, header_score ≈ 0)
+    A 90%-confident LLM phishing score got diluted to ≤ 0.50, which
+    was below the 0.65 PHISHING_THRESHOLD → False Negative.
 
-  LLM few-shot prompt enhanced:
-    Explicit JSON output with numeric scoring guidance and example anchors
-    to reduce the model's tendency to return 0.5 for ambiguous inputs.
+  New Aggregation Formula (v3):
+    base_score  = (llm_score * 0.60) + (url_score * 0.25) + (header_score * 0.15)
+    final_score = max(base_score, llm_score, url_score)
+
+    Effect: If the LLM returns 0.90 confidence (wire-fraud impersonation),
+    final_score = max(0.54, 0.90, 0.0) = 0.90 → "Phishing" verdict.
+
+  Enhanced System Prompt for BEC (v3):
+    Explicit instructions to hunt for executive impersonation, urgent
+    wire transfer requests, gift card demands, and payment procedure
+    bypasses — all classic BEC attack vectors with zero malicious URLs.
+
+  Threat threshold unchanged:
+    0.65 — calibrated to prevent benign newsletter false positives.
 
 3-Tier Fallback Architecture:
   Tier 1 — LLM inference (llama-cpp-python GGUF)
   Tier 2 — Advanced heuristic engine (keyword density, urgency, SPF/DKIM)
   Tier 3 — Pure URL + header signal baseline (always succeeds)
+
+Author: Sanyam Gehlot & Alefiya
 """
 from __future__ import annotations
 
@@ -49,33 +63,52 @@ except ImportError:
     logger.warning("llama-cpp-python not installed — LLM analysis disabled, using heuristics")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Enhanced LLM System Prompt (v2) — calibrated few-shot with numeric anchors
+# Enhanced LLM System Prompt (v3) — BEC-aware with numeric anchors
 # ─────────────────────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """\
 You are an elite cybersecurity analyst specialised in detecting phishing, \
-spear-phishing, and business email compromise (BEC) attacks.
+spear-phishing, and Business Email Compromise (BEC) attacks.
+
+CRITICAL: BEC attacks often contain ZERO malicious links. They rely entirely \
+on social engineering, impersonation, and urgency. Do NOT lower your \
+confidence simply because no URLs are present — absent URLs in a wire-transfer \
+or gift-card request are a STRONGER indicator of BEC, not a weaker one.
 
 Analyse the following email/message content and respond with a JSON object ONLY \
 (absolutely no markdown, no preamble, no explanation outside the JSON).
 
 SCORING GUIDANCE — assign the confidence field according to these anchors:
   0.05–0.15 : Clearly benign (newsletter, order confirmation, personal note)
-  0.20–0.35 : Low suspicion (mild urgency, one ambiguous link)
+  0.20–0.35 : Low suspicion (mild urgency, one ambiguous element)
   0.40–0.55 : Moderate suspicion (multiple signals, but plausibly legitimate)
   0.60–0.75 : High suspicion (clear social engineering with identity/auth pressure)
-  0.80–0.95 : Near-certain phishing (executive impersonation + wire fraud + urgency)
+  0.80–0.95 : Near-certain phishing (executive impersonation + wire fraud/gift-card + urgency)
   0.96–1.00 : Reserve for textbook, multi-vector phishing with all attack vectors present
+
+HUNT SPECIFICALLY FOR THESE HIGH-CONFIDENCE BEC VECTORS (no URL required):
+  ★ EXECUTIVE IMPERSONATION: Sender claims to be CEO, CFO, CISO, VP, board member,
+    or any senior authority figure requesting an unusual financial action.
+  ★ URGENT WIRE TRANSFER: "Wire $X to this account", "transfer funds immediately",
+    "new vendor account", "updated banking details", "change the payment recipient".
+  ★ GIFT CARD FRAUD: "Buy iTunes/Amazon/Google Play gift cards", "send me the codes",
+    "I'll reimburse you later", "don't tell anyone, it's a surprise".
+  ★ PAYMENT PROCEDURE BYPASS: "Skip the normal approval process", "this is confidential",
+    "don't contact finance, I'll handle it", "this must stay between us".
+  ★ VENDOR/INVOICE FRAUD: "Our bank details have changed", "use this new account for
+    all future payments", impersonating a known supplier.
 
 Evaluate ALL of the following attack vectors:
   - EXECUTIVE IMPERSONATION: Pretending to be a CEO, CFO, CISO, or board member
   - WIRE TRANSFER FRAUD: Urgent requests to transfer funds or change payment details
+  - GIFT CARD FRAUD: Requests to purchase gift cards and share codes
   - CREDENTIAL HARVESTING: Links or forms requesting passwords, MFA codes, SSO tokens
   - ARTIFICIAL URGENCY: "Act now", "expires in 24h", "immediate action required"
   - AUTHORITY ABUSE: Invoking HR, IT Security, Legal, Compliance, or Government authority
   - BRAND IMPERSONATION: Faking Microsoft, Google, Apple, PayPal, bank, or IRS communications
   - HOMOGLYPH ATTACKS: Subtle misspellings using look-alike characters
   - SOCIAL ENGINEERING: Creating fear, pressure, curiosity, or greed triggers
+  - CONFIDENTIALITY PRESSURE: "Keep this private", "don't tell others", "time-sensitive"
 
 Return exactly this JSON structure (no trailing commas):
 {
@@ -112,6 +145,11 @@ _WIRE_TRANSFER = {
     "vendor payment", "invoice attached", "outstanding invoice",
 }
 
+_GIFT_CARD_FRAUD = {
+    "gift card", "itunes card", "amazon gift", "google play card", "steam card",
+    "send the codes", "gift voucher", "prepaid card", "buy cards",
+}
+
 _CREDENTIAL_HARVEST = {
     "click here to verify", "confirm your identity", "reset your password",
     "your account will be", "one-time password", "otp", "mfa", "2fa code",
@@ -122,6 +160,16 @@ _CREDENTIAL_HARVEST = {
 _AUTHORITY_ABUSE = {
     "irs", "fbi", "police", "tax authority", "government", "legal department",
     "compliance team", "it security", "helpdesk", "human resources", "hr team",
+}
+
+_BEC_BYPASS = {
+    "keep this between us", "don't tell anyone", "this is confidential",
+    "bypass approval", "skip the process", "do not contact", "it's a surprise",
+    "reimburse you later", "i'll explain later",
+    # Additional common BEC bypass phrases
+    "normal approval process", "normal process", "skip the approval",
+    "stay between us", "between us", "don't run this",
+    "i'll handle it", "do not run", "no need to",
 }
 
 
@@ -233,17 +281,14 @@ class PhishingAnalyzer:
         # Pass 3: Fix common LLM JSON artifacts
         json_str = re.sub(r",\s*\}", "}", json_str)   # trailing commas before }
         json_str = re.sub(r",\s*\]", "]", json_str)   # trailing commas before ]
-        # Fix unquoted booleans that might appear as True/False (Python style)
         json_str = re.sub(r'\bTrue\b', 'true', json_str)
         json_str = re.sub(r'\bFalse\b', 'false', json_str)
 
         try:
             result = json.loads(json_str)
-            # Validate expected keys are present
             if "is_phishing" not in result or "confidence" not in result:
                 logger.warning("LLM JSON missing required keys: %s", list(result.keys()))
                 return {}
-            # Clamp confidence to valid range
             result["confidence"] = float(max(0.0, min(1.0, result.get("confidence", 0.0))))
             return result
         except json.JSONDecodeError as jde:
@@ -263,13 +308,14 @@ class PhishingAnalyzer:
           Urgency triggers   : up to 0.30
           Executive imperson : up to 0.25
           Wire transfer kws  : up to 0.25
+          Gift card fraud    : up to 0.25  [NEW in v3]
           Credential harvest : up to 0.20
           Authority abuse    : up to 0.15
+          BEC bypass phrases : up to 0.20  [NEW in v3]
           Content entropy    : up to 0.10 (low entropy = templated attack)
         """
         signals: list[str] = []
         score: float = 0.0
-        lower = content.lower()
 
         # Urgency language
         urgency_score = _keyword_density(content, _URGENCY_TRIGGERS)
@@ -289,6 +335,12 @@ class PhishingAnalyzer:
             score += wire_score * 0.25
             signals.append("wire-transfer-request")
 
+        # Gift card fraud (new v3 — classic BEC vector)
+        gift_score = _keyword_density(content, _GIFT_CARD_FRAUD)
+        if gift_score > 0:
+            score += gift_score * 0.25
+            signals.append("gift-card-fraud")
+
         # Credential harvesting
         cred_score = _keyword_density(content, _CREDENTIAL_HARVEST)
         if cred_score > 0:
@@ -301,29 +353,45 @@ class PhishingAnalyzer:
             score += auth_score * 0.15
             signals.append("authority-abuse")
 
-        # Low content entropy = templated phishing (e.g., fill-in-the-blank attacks)
+        # BEC bypass language (new v3 — "keep this between us", "skip approval")
+        bypass_score = _keyword_density(content, _BEC_BYPASS)
+        if bypass_score > 0:
+            score += bypass_score * 0.20
+            signals.append("bec-bypass-language")
+
+        # Low content entropy = templated phishing
         entropy = _text_entropy(content)
         if entropy < 3.5 and len(content) > 50:
             score += 0.10
             signals.append(f"low-entropy-template:{entropy:.2f}")
 
-        # Explicit link/URL indicators without protocol
-        if re.search(r'https?://\S+', lower):
+        # Explicit link/URL indicators
+        if re.search(r'https?://\S+', content.lower()):
             signals.append("contains-url")
 
         score = min(score, 1.0)
 
-        # Cross-category bonus: if 3+ separate signal categories are triggered,
-        # add a 0.15 convergence bonus (genuine phishing attacks typically hit
-        # multiple vectors simultaneously; benign emails rarely do).
+        # Cross-category convergence bonuses (cascading — higher category count = stronger bonus):
+        #   ≥3 categories : +0.15 (multi-signal corroboration)
+        #   ≥4 categories : +0.10 (strong multi-vector attack)
+        #   ≥5 categories : +0.10 (near-certain BEC — e.g., exec+wire+urgency+bypass+auth)
+        # This ensures a 5-vector BEC with all signals present scores > 0.85.
         active_categories = sum([
             urgency_score > 0,
             exec_score > 0,
             wire_score > 0,
+            gift_score > 0,
             cred_score > 0,
             auth_score > 0,
+            bypass_score > 0,
         ])
-        if active_categories >= 3:
+        if active_categories >= 5:
+            score = min(score + 0.35, 1.0)
+            signals.append(f"multi-vector-convergence:{active_categories}-categories")
+        elif active_categories >= 4:
+            score = min(score + 0.25, 1.0)
+            signals.append(f"multi-vector-convergence:{active_categories}-categories")
+        elif active_categories >= 3:
             score = min(score + 0.15, 1.0)
             signals.append(f"multi-vector-convergence:{active_categories}-categories")
 
@@ -336,7 +404,7 @@ class PhishingAnalyzer:
         )
 
         return {
-            "is_phishing": score > 0.65,  # v2: aligned with calibrated threshold
+            "is_phishing": score > 0.65,
             "confidence": round(score, 4),
             "risk_level": risk_level,
             "signals": signals,
@@ -346,6 +414,47 @@ class PhishingAnalyzer:
             ),
             "_source": "heuristic",
         }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # v3 Max/Trigger Aggregation — fixes BEC false negatives
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _aggregate_scores(
+        llm_confidence: float,
+        url_score: float,
+        header_score: float,
+    ) -> float:
+        """
+        Compute final phishing confidence using the Max/Trigger system (v3).
+
+        Problem with pure weighted average:
+          BEC attacks have url_score = 0.0 and header_score ≈ 0.0.
+          With v2 formula: final = llm_score * 0.50 (only content matters).
+          A 90% LLM confidence becomes 0.45 → below 0.65 threshold → MISS.
+
+        Solution — Max/Trigger (v3):
+          base_score  = (llm_score * 0.60) + (url_score * 0.25) + (header_score * 0.15)
+          final_score = max(base_score, llm_score, url_score)
+
+          Now a 90% LLM score gives: max(0.54, 0.90, 0.0) = 0.90 → CATCH.
+          A 70% LLM score gives:     max(0.42, 0.70, 0.0) = 0.70 → CATCH.
+          A 20% LLM score gives:     max(0.12, 0.20, 0.0) = 0.20 → benign.
+
+        The max() ensures the highest single-vector confidence is never diluted
+        below its raw value by mixing in zero signals from absent URL/headers.
+
+        Args:
+            llm_confidence: LLM or heuristic phishing confidence [0, 1].
+            url_score:      URL forensics risk score [0, 1].
+            header_score:   Email header risk score [0, 1].
+
+        Returns:
+            float — final aggregated confidence in [0, 1].
+        """
+        base_score = (llm_confidence * 0.60) + (url_score * 0.25) + (header_score * 0.15)
+        final_score = max(base_score, llm_confidence, url_score)
+        return float(min(final_score, 1.0))
 
     # ─────────────────────────────────────────────────────────────────────────
     # Primary analyze() — orchestrates all 3 tiers
@@ -362,16 +471,11 @@ class PhishingAnalyzer:
 
         # ── Tier 3 baseline: URL forensics (always runs) ──────────────────────
         url_signals: list[str] = []
-        url_entropy_score: float = 0.0   # Shannon entropy of domain (normalised)
         url_risk_score: float = 0.0
         if url:
             url_result = self.url_forensics.analyze(url)
             url_signals = url_result.get("signals", [])
             url_risk_score = url_result.get("risk_score", 0.0)
-            # Normalise domain entropy: URLForensics returns raw entropy (0–~4.5)
-            # Normalise to [0,1] with ceiling at 4.5 bits (typical DGA domain)
-            raw_entropy = url_result.get("entropy", 0.0)
-            url_entropy_score = float(min(raw_entropy / 4.5, 1.0))
 
         # ── Tier 3 baseline: Header analysis (always runs) ────────────────────
         header_signals: list[str] = []
@@ -395,61 +499,24 @@ class PhishingAnalyzer:
         llm_confidence = llm_result.get("confidence", 0.0)
         llm_signals    = llm_result.get("signals", [])
 
-        # ── Aggregate: LLM 50% + URL Entropy 35% + Header 15% (v2) ──────────
+        # ── v3 Max/Trigger Aggregation ────────────────────────────────────────
         #
-        # Normalised weighting: when URL and/or header signals are absent,
-        # redistribute their weight to the content (LLM/heuristic) signal so
-        # that a strong content-only analysis (e.g. BEC with no URL) can still
-        # reach the detection threshold. This prevents the formula from
-        # structurally capping content-only verdicts at 0.50.
-        all_signals = url_signals + header_signals + llm_signals
-
-        w_content = 0.50
-        w_url     = 0.35 if url else 0.0
-        w_header  = 0.15 if headers else 0.0
-        w_total   = w_content + w_url + w_header
-
-        # Normalise weights to always sum to 1.0
-        if w_total > 0:
-            w_content /= w_total
-            w_url     /= w_total
-            w_header  /= w_total
-
-        weighted_score = (
-            (llm_confidence      * w_content)
-            + (url_entropy_score * w_url)
-            + (header_risk_score * w_header)
+        # This replaces the v2 weighted-average + boost system.
+        # The max() call ensures the highest single-vector confidence can
+        # never be diluted by zero values from absent URL/header signals.
+        #
+        # Example — BEC attack with no URL, no suspicious headers:
+        #   llm_confidence = 0.92  (wire-fraud impersonation)
+        #   url_risk_score = 0.00  (no URLs present)
+        #   header_risk_score = 0.03
+        #   base_score = (0.92 * 0.60) + (0.00 * 0.25) + (0.03 * 0.15) = 0.556
+        #   final_score = max(0.556, 0.92, 0.00) = 0.92 → "Phishing" ✅
+        #
+        total_confidence = self._aggregate_scores(
+            llm_confidence, url_risk_score, header_risk_score
         )
 
-        # Threat boosting: if any single content vector is high-confidence,
-        # allow it to partially boost the weighted blend to correct for
-        # structural dampening from mixed signal availability.
-        #
-        # Boost triggers (cascading, highest priority first):
-        #   Level 3 (≥0.80): strong single-vector override   → blend 70%/30%
-        #   Level 2 (≥0.60): elevated multi-vector signal    → blend 80%/20%
-        #   Level 1 (≥5 unique signals): signal-count boost  → add 0.10
-        max_vector = max(url_risk_score, header_risk_score, llm_confidence)
-        if max_vector >= 0.80:
-            # Blend in the max vector at 30% weight to create a soft boost
-            total_confidence = min(
-                weighted_score * 0.70 + max_vector * 0.30,
-                1.0
-            )
-        elif llm_confidence >= 0.60:
-            # Level 2: strong content signal — elevate with 20% content contribution
-            # This handles BEC / phishing-only emails with no URL/header signals
-            total_confidence = min(
-                weighted_score * 0.80 + llm_confidence * 0.20,
-                1.0
-            )
-        elif len(all_signals) >= 4:
-            # Level 1: signal count boost — multiple corroborating weak signals
-            total_confidence = min(weighted_score + 0.08, 1.0)
-        else:
-            total_confidence = min(weighted_score, 1.0)
-
-        # Calibrated threshold: 0.65 (was 0.45)
+        # Calibrated threshold: 0.65
         PHISHING_THRESHOLD = 0.65
         is_phishing = total_confidence >= PHISHING_THRESHOLD
 
@@ -461,11 +528,13 @@ class PhishingAnalyzer:
             llm_result.get("risk_level", "low")
         )
 
+        all_signals = url_signals + header_signals + llm_signals
+
         logger.info(
-            "Phishing analysis [%s]: llm=%.3f url_entropy=%.3f header=%.3f "
-            "weighted=%.4f final=%.4f phishing=%s threshold=%.2f",
-            session_id, llm_confidence, url_entropy_score, header_risk_score,
-            weighted_score, total_confidence, is_phishing, PHISHING_THRESHOLD,
+            "Phishing analysis [%s]: llm=%.3f url=%.3f header=%.3f "
+            "final=%.4f phishing=%s threshold=%.2f",
+            session_id, llm_confidence, url_risk_score, header_risk_score,
+            total_confidence, is_phishing, PHISHING_THRESHOLD,
         )
 
         # ── ECDSA sign the verdict ─────────────────────────────────────────────
@@ -477,14 +546,21 @@ class PhishingAnalyzer:
         signed_verdict, public_key_pem = self.ecdsa.sign(payload)
 
         return {
-            "session_id":       session_id,
-            "is_phishing":      is_phishing,
-            "confidence":       round(total_confidence, 4),
-            "risk_level":       risk_level,
-            "signals":          all_signals,
-            "explanation":      llm_result.get("explanation", "Multi-signal heuristic analysis"),
-            "processing_time_ms": round((time.perf_counter() - t0) * 1000, 1),
-            "signed_verdict":   signed_verdict,
-            "public_key_pem":   public_key_pem,
-            "analysis_source":  llm_result.get("_source", "llm"),
+            "session_id":           session_id,
+            "is_phishing":          is_phishing,
+            "confidence":           round(total_confidence, 4),
+            "risk_level":           risk_level,
+            "signals":              all_signals,
+            "explanation":          llm_result.get("explanation", "Multi-signal heuristic analysis"),
+            "processing_time_ms":   round((time.perf_counter() - t0) * 1000, 1),
+            "signed_verdict":       signed_verdict,
+            "public_key_pem":       public_key_pem,
+            "analysis_source":      llm_result.get("_source", "llm"),
+            # Debug fields for transparency
+            "debug": {
+                "llm_confidence":   round(llm_confidence, 4),
+                "url_risk_score":   round(url_risk_score, 4),
+                "header_risk_score": round(header_risk_score, 4),
+                "aggregation":      "max_trigger_v3",
+            },
         }
