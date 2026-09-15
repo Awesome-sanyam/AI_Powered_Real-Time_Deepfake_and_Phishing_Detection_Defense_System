@@ -86,13 +86,22 @@ _BRAND_KEYWORDS = {
 _SUSPICIOUS_PATH_KEYWORDS = {
     "login", "signin", "sign-in", "verify", "secure", "update",
     "confirm", "account", "password", "credential", "authenticate",
-    "oauth", "token", "reset", "recovery",
+    "oauth", "token", "reset", "recovery", "verify-identity",
+    "account-suspended", "wire-transfer", "gift-card",
 }
 
 # Urgency signals in URL paths
 _URGENCY_PATH_KEYWORDS = {
     "urgent", "expire", "expiring", "expired", "suspended",
     "action-required", "immediate", "alert", "locked", "blocked",
+    "urgent-request", "account-suspended",
+}
+
+# High-threat deterministic red flags in URLs (+0.40 static penalty)
+_HIGH_THREAT_URL_KEYWORDS = {
+    "wire-transfer", "wiretransfer", "urgent-request", "gift-card",
+    "giftcard", "account-suspended", "accountsuspended",
+    "verify-identity", "verifyidentity", "verify-your-identity",
 }
 
 
@@ -212,6 +221,13 @@ class URLForensics:
                 signals.append(f"suspicious-path:{keyword}")
                 risk_score += 0.10
                 break  # one flag is enough
+
+        # ── 9b. High-threat deterministic red flags in URL (+0.40 static penalty) ─
+        for keyword in _HIGH_THREAT_URL_KEYWORDS:
+            if keyword in full_url or keyword.replace("-", "") in full_url:
+                signals.append(f"high-threat-url-keyword:{keyword}")
+                risk_score += 0.40
+                break
 
         # ── 10. Urgency path keywords ─────────────────────────────────────────
         for keyword in _URGENCY_PATH_KEYWORDS:

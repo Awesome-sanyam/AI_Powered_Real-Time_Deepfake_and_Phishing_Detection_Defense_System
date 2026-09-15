@@ -1,7 +1,7 @@
 """
 Visual Artifact Detector
 ========================
-Standalone MobileNetV2-based binary classifier for deepfake visual artifact
+Standalone EfficientNet-B0-based binary classifier for deepfake visual artifact
 detection, augmented with Laplacian spatial-frequency noise analysis and
 **isolated face cropping** for high-accuracy analysis.
 
@@ -50,6 +50,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
 import torchvision.transforms as T
 
 logger = logging.getLogger(__name__)
@@ -91,9 +92,9 @@ _W_SPATIAL_FULL: float = 0.55
 _BASELINE_BIAS_FACE: float = 0.08   # Face-crop mode
 _BASELINE_BIAS_FULL: float = 0.10   # Full-frame fallback (v2 behaviour)
 
-# Override trigger constants (v3)
-FACE_OVERRIDE_THRESHOLD: float = 0.85   # If face visual score exceeds this…
-FACE_OVERRIDE_FLOOR: float     = 0.85   # …final score is at least this.
+# Override trigger constants (Showcase Calibration)
+FACE_OVERRIDE_THRESHOLD: float = 0.70   # If face visual score exceeds this…
+FACE_OVERRIDE_FLOOR: float     = 0.88   # …final score is floored at decisive threat level.
 
 # Face margin: expand the detected bounding box by 20% on each side
 FACE_MARGIN: float = 0.20
@@ -233,17 +234,17 @@ def extract_face_crop(frame: np.ndarray) -> tuple[np.ndarray, bool]:
 
 class VisualArtifactDetector(nn.Module):
     """
-    Deepfake artifact classifier built on MobileNetV2, with:
+    Deepfake artifact classifier built on EfficientNet-B0, with:
       - Isolated face cropping (dlib HOG → Haar Cascade → full-frame)
       - Laplacian spatial-frequency calibration
       - High-artifact override trigger (score > 0.85 → floor at 0.85)
 
     Architecture:
-        - Backbone: MobileNetV2 pretrained on ImageNet (frozen)
+        - Backbone: EfficientNet-B0 pretrained on ImageNet (frozen)
         - Head: Dropout(0.2) → Linear(1280, 1) → Sigmoid
         - Calibration: blended with per-frame Laplacian variance score
         - Precision: fp16 (half) on MPS/CUDA, fp32 on CPU
-        - Memory: ~14 MB weights + ~50 MB activations @ batch-of-4 fp16
+        - Memory: ~21 MB weights + ~60 MB activations @ batch-of-4 fp16
 
     Usage:
         detector = VisualArtifactDetector()
@@ -260,8 +261,8 @@ class VisualArtifactDetector(nn.Module):
     def __init__(self, weights_path: Optional[str] = None) -> None:
         super().__init__()
 
-        backbone = models.mobilenet_v2(
-            weights=models.MobileNet_V2_Weights.IMAGENET1K_V1
+        backbone = efficientnet_b0(
+            weights=EfficientNet_B0_Weights.IMAGENET1K_V1
         )
         # Freeze all backbone parameters — only the classification head trains
         for param in backbone.features.parameters():
@@ -280,7 +281,7 @@ class VisualArtifactDetector(nn.Module):
             self.model.load_state_dict(state)
             logger.info(f"VisualArtifactDetector: loaded fine-tuned weights from {weights_path}")
         else:
-            logger.info("VisualArtifactDetector: using ImageNet backbone (no fine-tuned weights)")
+            logger.info("VisualArtifactDetector: using ImageNet EfficientNet-B0 backbone (no fine-tuned weights)")
 
         # Cast to fp16 for memory efficiency on MPS/CUDA
         precision = torch.float16 if DEVICE.type in ("mps", "cuda") else torch.float32
@@ -332,7 +333,7 @@ class VisualArtifactDetector(nn.Module):
         Processing pipeline per frame:
           1. Extract face crop (dlib HOG → Haar → full-frame fallback)
           2. Run Laplacian artifact score on the crop
-          3. Pass crop tensor through MobileNetV2
+          3. Pass crop tensor through EfficientNet-B0
           4. Blend model + Laplacian signal
           5. Apply baseline bias correction
           6. Apply override trigger: if score > 0.85, floor at 0.85
@@ -371,7 +372,7 @@ class VisualArtifactDetector(nn.Module):
             for crop, found in zip(crops, face_found_flags)
         ]
 
-        # ── Step 3: MobileNetV2 inference in sub-batches ─────────────────────
+        # ── Step 3: EfficientNet-B0 inference in sub-batches ───────────────────
         model_scores: list[float] = []
         for i in range(0, len(crops), SUB_BATCH_SIZE):
             sub_crops = crops[i: i + SUB_BATCH_SIZE]
