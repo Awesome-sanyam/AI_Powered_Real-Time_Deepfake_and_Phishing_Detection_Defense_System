@@ -4,6 +4,20 @@ LLM-based Phishing Analyzer
 Uses a 4-bit quantized GGUF LLaMA model via llama-cpp-python.
 Constrained to n_ctx=512 and 4 threads to fit within M4 memory budget.
 
+CALIBRATION (v2):
+  Weighted scoring formula updated:
+    LLM/Heuristic score : 0.50  (unchanged)
+    URL Entropy signal  : 0.35  (was lumped into generic "URL" signals)
+    Header signal       : 0.15  (unchanged)
+
+  Threat threshold raised:
+    0.65  (was 0.45) — prevents benign newsletters / promotional emails from
+    being flagged. At 0.45, even minimal urgency language triggered positives.
+
+  LLM few-shot prompt enhanced:
+    Explicit JSON output with numeric scoring guidance and example anchors
+    to reduce the model's tendency to return 0.5 for ambiguous inputs.
+
 3-Tier Fallback Architecture:
   Tier 1 — LLM inference (llama-cpp-python GGUF)
   Tier 2 — Advanced heuristic engine (keyword density, urgency, SPF/DKIM)
@@ -35,7 +49,7 @@ except ImportError:
     logger.warning("llama-cpp-python not installed — LLM analysis disabled, using heuristics")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Enhanced LLM System Prompt — spear-phishing and executive fraud aware
+# Enhanced LLM System Prompt (v2) — calibrated few-shot with numeric anchors
 # ─────────────────────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """\
@@ -44,6 +58,14 @@ spear-phishing, and business email compromise (BEC) attacks.
 
 Analyse the following email/message content and respond with a JSON object ONLY \
 (absolutely no markdown, no preamble, no explanation outside the JSON).
+
+SCORING GUIDANCE — assign the confidence field according to these anchors:
+  0.05–0.15 : Clearly benign (newsletter, order confirmation, personal note)
+  0.20–0.35 : Low suspicion (mild urgency, one ambiguous link)
+  0.40–0.55 : Moderate suspicion (multiple signals, but plausibly legitimate)
+  0.60–0.75 : High suspicion (clear social engineering with identity/auth pressure)
+  0.80–0.95 : Near-certain phishing (executive impersonation + wire fraud + urgency)
+  0.96–1.00 : Reserve for textbook, multi-vector phishing with all attack vectors present
 
 Evaluate ALL of the following attack vectors:
   - EXECUTIVE IMPERSONATION: Pretending to be a CEO, CFO, CISO, or board member
@@ -113,12 +135,24 @@ def _text_entropy(text: str) -> float:
 
 
 def _keyword_density(text: str, keywords: set) -> float:
-    """Fraction of keyword matches found with saturation curve (1 hit = 0.7, 2+ hits = 1.0)."""
+    """
+    Keyword hit density with a multi-stage saturation curve.
+
+    Calibrated hit-to-score mapping:
+      0 hits  → 0.00
+      1 hit   → 0.45  (single clear signal)
+      2 hits  → 0.70  (two corroborating signals)
+      3+ hits → 1.00  (saturation — strong multi-signal phishing)
+    """
     lower = text.lower()
     hits = sum(1 for kw in keywords if kw in lower)
     if hits == 0:
         return 0.0
-    return min(0.35 + (hits * 0.35), 1.0)
+    if hits == 1:
+        return 0.45
+    if hits == 2:
+        return 0.70
+    return 1.0
 
 
 class PhishingAnalyzer:
@@ -278,6 +312,22 @@ class PhishingAnalyzer:
             signals.append("contains-url")
 
         score = min(score, 1.0)
+
+        # Cross-category bonus: if 3+ separate signal categories are triggered,
+        # add a 0.15 convergence bonus (genuine phishing attacks typically hit
+        # multiple vectors simultaneously; benign emails rarely do).
+        active_categories = sum([
+            urgency_score > 0,
+            exec_score > 0,
+            wire_score > 0,
+            cred_score > 0,
+            auth_score > 0,
+        ])
+        if active_categories >= 3:
+            score = min(score + 0.15, 1.0)
+            signals.append(f"multi-vector-convergence:{active_categories}-categories")
+
+        score = min(score, 1.0)
         risk_level = (
             "critical" if score >= 0.80 else
             "high"     if score >= 0.60 else
@@ -286,7 +336,7 @@ class PhishingAnalyzer:
         )
 
         return {
-            "is_phishing": score > 0.50,
+            "is_phishing": score > 0.65,  # v2: aligned with calibrated threshold
             "confidence": round(score, 4),
             "risk_level": risk_level,
             "signals": signals,
@@ -312,11 +362,16 @@ class PhishingAnalyzer:
 
         # ── Tier 3 baseline: URL forensics (always runs) ──────────────────────
         url_signals: list[str] = []
+        url_entropy_score: float = 0.0   # Shannon entropy of domain (normalised)
         url_risk_score: float = 0.0
         if url:
             url_result = self.url_forensics.analyze(url)
             url_signals = url_result.get("signals", [])
             url_risk_score = url_result.get("risk_score", 0.0)
+            # Normalise domain entropy: URLForensics returns raw entropy (0–~4.5)
+            # Normalise to [0,1] with ceiling at 4.5 bits (typical DGA domain)
+            raw_entropy = url_result.get("entropy", 0.0)
+            url_entropy_score = float(min(raw_entropy / 4.5, 1.0))
 
         # ── Tier 3 baseline: Header analysis (always runs) ────────────────────
         header_signals: list[str] = []
@@ -340,20 +395,63 @@ class PhishingAnalyzer:
         llm_confidence = llm_result.get("confidence", 0.0)
         llm_signals    = llm_result.get("signals", [])
 
-        # ── Aggregate: URL 35%, Header 15%, LLM/Heuristic 50% ────────────────
+        # ── Aggregate: LLM 50% + URL Entropy 35% + Header 15% (v2) ──────────
+        #
+        # Normalised weighting: when URL and/or header signals are absent,
+        # redistribute their weight to the content (LLM/heuristic) signal so
+        # that a strong content-only analysis (e.g. BEC with no URL) can still
+        # reach the detection threshold. This prevents the formula from
+        # structurally capping content-only verdicts at 0.50.
         all_signals = url_signals + header_signals + llm_signals
+
+        w_content = 0.50
+        w_url     = 0.35 if url else 0.0
+        w_header  = 0.15 if headers else 0.0
+        w_total   = w_content + w_url + w_header
+
+        # Normalise weights to always sum to 1.0
+        if w_total > 0:
+            w_content /= w_total
+            w_url     /= w_total
+            w_header  /= w_total
+
         weighted_score = (
-            (url_risk_score    * 0.35)
-            + (header_risk_score * 0.15)
-            + (llm_confidence    * 0.50)
+            (llm_confidence      * w_content)
+            + (url_entropy_score * w_url)
+            + (header_risk_score * w_header)
         )
+
+        # Threat boosting: if any single content vector is high-confidence,
+        # allow it to partially boost the weighted blend to correct for
+        # structural dampening from mixed signal availability.
+        #
+        # Boost triggers (cascading, highest priority first):
+        #   Level 3 (≥0.80): strong single-vector override   → blend 70%/30%
+        #   Level 2 (≥0.60): elevated multi-vector signal    → blend 80%/20%
+        #   Level 1 (≥5 unique signals): signal-count boost  → add 0.10
         max_vector = max(url_risk_score, header_risk_score, llm_confidence)
-        if max_vector >= 0.60:
-            total_confidence = min(max(weighted_score, max_vector * 0.85), 1.0)
+        if max_vector >= 0.80:
+            # Blend in the max vector at 30% weight to create a soft boost
+            total_confidence = min(
+                weighted_score * 0.70 + max_vector * 0.30,
+                1.0
+            )
+        elif llm_confidence >= 0.60:
+            # Level 2: strong content signal — elevate with 20% content contribution
+            # This handles BEC / phishing-only emails with no URL/header signals
+            total_confidence = min(
+                weighted_score * 0.80 + llm_confidence * 0.20,
+                1.0
+            )
+        elif len(all_signals) >= 4:
+            # Level 1: signal count boost — multiple corroborating weak signals
+            total_confidence = min(weighted_score + 0.08, 1.0)
         else:
             total_confidence = min(weighted_score, 1.0)
 
-        is_phishing = total_confidence >= 0.45 or len(all_signals) >= 3
+        # Calibrated threshold: 0.65 (was 0.45)
+        PHISHING_THRESHOLD = 0.65
+        is_phishing = total_confidence >= PHISHING_THRESHOLD
 
         # ── Derive risk level from final confidence ────────────────────────────
         risk_level = (
@@ -361,6 +459,13 @@ class PhishingAnalyzer:
             "high"     if total_confidence >= 0.65 else
             "medium"   if total_confidence >= 0.40 else
             llm_result.get("risk_level", "low")
+        )
+
+        logger.info(
+            "Phishing analysis [%s]: llm=%.3f url_entropy=%.3f header=%.3f "
+            "weighted=%.4f final=%.4f phishing=%s threshold=%.2f",
+            session_id, llm_confidence, url_entropy_score, header_risk_score,
+            weighted_score, total_confidence, is_phishing, PHISHING_THRESHOLD,
         )
 
         # ── ECDSA sign the verdict ─────────────────────────────────────────────

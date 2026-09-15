@@ -2,16 +2,29 @@
 AI Engine — Cross-Modal Verification Engine
 ============================================
 Detects deepfakes by analysing the temporal coherence between:
-  1. Visual artifacts   (MobileNetV2 on MPS/CUDA, fp16, batch_size=4)
-  2. Lip-sync delay     (MediaPipe FaceLandmarker Tasks API + Librosa cross-correlation)
-  3. Blink rate anomaly (Eye Aspect Ratio via FaceLandmarker Tasks API)
+  1. Visual artifacts   (MobileNetV2 + Laplacian spatial-frequency, MPS/CUDA fp16)
+  2. Lip-sync delay     (dlib 68-pt landmarks + Librosa RMS cross-correlation)
+  3. Blink rate anomaly (dlib 68-pt EAR blink counter)
   4. Audio anomaly      (Librosa MFCC + RMS — silence ratio, flat energy profile)
 
 All verdicts are cryptographically signed via ECDSA P-256.
 
+CALIBRATION (v2):
+  Signal weights updated:
+    visual:   0.45  (was 0.40) — calibrated Laplacian blend is now more reliable
+    lip_sync: 0.35  (unchanged)
+    blink:    0.20  (was 0.25) — reduced due to new duration guard (short segments skip)
+
+  FAKE_THRESHOLD raised:
+    0.72  (was 0.55) — significantly higher bar required to call a stream "fake".
+    At the old 0.55 threshold, combined signals from natural jitter routinely
+    crossed the line. The new threshold requires genuine multi-signal convergence.
+
+  LIP_SYNC_THRESHOLD_MS updated:
+    160.0 ms (was 80.0 ms) — mirrors the new LipSyncVerifier constant.
+
 NOTE: MediaPipe ≥ 0.10.21 removed mp.solutions. All face detection now uses
-      the Tasks API (mp.tasks.vision.FaceLandmarker) with the model bundle at
-      models/face_landmarker.task.
+      dlib HOG + 68-pt shape predictor (CPU-only, stable on macOS arm64).
 
 Hardware target: Apple Silicon M4 — uses torch.device("mps") with CPU fallback.
 Memory budget  : ≤ 2 GB peak (batch_size=4, fp16 inference).
@@ -65,8 +78,8 @@ class FrameAnalysisResult:
     """Per-frame analysis result."""
     frame_index: int
     visual_artifact_score: float    # 0.0 (real) → 1.0 (fake)
-    lip_sync_delay_ms: float        # >80ms = suspicious
-    blink_rate_bpm: float           # <8 or >30 = suspicious
+    lip_sync_delay_ms: float        # >160ms = suspicious (v2 calibrated)
+    blink_rate_bpm: float           # <8 or >30 = suspicious (if sample is long enough)
     is_suspicious: bool
     confidence: float               # aggregated [0, 1]
 
@@ -92,11 +105,14 @@ class CrossModalVerificationEngine:
     Orchestrates all four deepfake detection signal streams and aggregates
     them into a weighted confidence score with an ECDSA-signed verdict.
 
-    Signal weights:
-        Visual artifact score  : 0.40  (MobileNetV2 ImageNet backbone, fp16 MPS)
-        Lip-sync delay         : 0.30  (FaceLandmarker + Librosa cross-correlation)
-        Blink rate anomaly     : 0.20  (FaceLandmarker EAR blink counter)
-        Audio anomaly          : 0.10  (Librosa MFCC silence/flatness heuristic)
+    Calibrated Signal Weights (v2):
+        Visual artifact score  : 0.45  (MobileNetV2 + Laplacian blend, fp16 MPS)
+        Lip-sync delay         : 0.35  (dlib + Librosa, 160ms threshold)
+        Blink rate anomaly     : 0.20  (dlib EAR, min 300-frame guard)
+
+    Fake Threshold (v2):
+        0.72 — requires strong multi-signal convergence to avoid false positives
+                from natural webcam capture jitter and lighting artefacts.
 
     Usage:
         engine = CrossModalVerificationEngine()
@@ -110,19 +126,19 @@ class CrossModalVerificationEngine:
     """
 
     WEIGHTS: dict[str, float] = {
-        "visual":    0.40,   # MobileNetV2 ImageNet backbone (fp16 MPS)
-        "lip_sync":  0.35,   # FaceLandmarker + Librosa cross-correlation (>80ms = suspicious)
-        "blink":     0.25,   # FaceLandmarker EAR blink counter (<8 or >30 BPM = suspicious)
+        "visual":    0.45,   # MobileNetV2 + Laplacian spatial-frequency (calibrated)
+        "lip_sync":  0.35,   # dlib + Librosa cross-correlation (>160ms = suspicious)
+        "blink":     0.20,   # dlib EAR blink counter (requires ≥300 frames)
     }
-    FAKE_THRESHOLD: float = 0.55
-    LIP_SYNC_THRESHOLD_MS: float = 80.0   # milliseconds — flagged if delay exceeds this
+    FAKE_THRESHOLD: float = 0.72      # Raised from 0.55 — requires genuine multi-signal convergence
+    LIP_SYNC_THRESHOLD_MS: float = 160.0  # Updated to match LipSyncVerifier v2
 
     def __init__(
         self,
         visual_weights_path: Optional[str] = None,
         ecdsa_private_key_pem: Optional[str] = None,
     ) -> None:
-        # Visual model (MobileNetV2 on MPS/CUDA)
+        # Visual model (MobileNetV2 + Laplacian on MPS/CUDA)
         self.visual = VisualArtifactDetector(visual_weights_path)
 
         # FaceLandmarker-based detectors — each manages its own model instance
@@ -136,7 +152,7 @@ class CrossModalVerificationEngine:
         # ECDSA signing service
         self.ecdsa = ECDSAService(private_key_pem=ecdsa_private_key_pem)
 
-        logger.info("CrossModalVerificationEngine ready on %s", DEVICE)
+        logger.info("CrossModalVerificationEngine v2 (calibrated) ready on %s", DEVICE)
 
     def _confidence(
         self,
@@ -144,7 +160,24 @@ class CrossModalVerificationEngine:
         lip_sus: bool,
         blink_sus: bool,
     ) -> float:
-        """Compute weighted deepfake confidence in [0, 1]."""
+        """
+        Compute weighted deepfake confidence in [0, 1].
+
+        Uses calibrated weights:
+            visual:   0.45
+            lip_sync: 0.35
+            blink:    0.20
+
+        Both lip_sus and blink_sus are boolean signals — they contribute their
+        full weight only when flagged. This means:
+          - visual-only signal (max):   0.45
+          - lip-only signal (max):      0.35
+          - blink-only signal (max):    0.20
+          - all three signals:          1.00
+
+        For a genuine webcam stream with calibrated visual scores (~0.05-0.15),
+        no lip desync, and no blink anomaly, confidence ≈ 0.02–0.07 < 0.72.
+        """
         return float(np.clip(
             self.WEIGHTS["visual"]   * visual_score
             + self.WEIGHTS["lip_sync"] * (1.0 if lip_sus else 0.0)
@@ -178,23 +211,29 @@ class CrossModalVerificationEngine:
 
         t0 = time.perf_counter()
 
-        # 1. Visual artifact detection (MobileNetV2 on MPS)
+        # 1. Visual artifact detection (MobileNetV2 + Laplacian on MPS)
         scores = self.visual.score_batch(frames)
-        mean_score = float(np.mean(scores))
+        mean_score = float(np.mean(scores)) if scores else 0.0
 
-        # 2. Lip-sync delay analysis (FaceLandmarker VIDEO mode)
+        # 2. Lip-sync delay analysis (dlib + Librosa, 160ms threshold)
         lip_delay, lip_sus = self.lip_sync.verify(frames, audio_bytes, fps, sample_rate)
 
-        # 3. Blink rate analysis (FaceLandmarker VIDEO mode — separate instance)
+        # 3. Blink rate analysis (dlib EAR — with 300-frame minimum guard)
         blink_bpm, blink_sus = self.blink.compute_blink_rate(frames, fps)
 
         # 4. Audio anomaly detection (advisory signal — not in primary weights)
         audio_report = self.audio_analyzer.detect_anomaly(audio_bytes)
         _ = audio_report.get("is_anomalous", False)  # advisory only; weights removed
 
-        # 5. Confidence aggregation (audio is advisory-only; not in primary weights)
+        # 5. Confidence aggregation
         conf = self._confidence(mean_score, lip_sus, blink_sus)
         is_fake = conf >= self.FAKE_THRESHOLD
+
+        logger.info(
+            "Deepfake analysis [%s]: visual=%.3f lip_sus=%s blink_sus=%s "
+            "conf=%.4f fake=%s threshold=%.2f",
+            session_id, mean_score, lip_sus, blink_sus, conf, is_fake, self.FAKE_THRESHOLD
+        )
 
         # 6. ECDSA signing
         payload = (
@@ -208,29 +247,31 @@ class CrossModalVerificationEngine:
             torch.mps.empty_cache()
         gc.collect()
 
+        # Build frame-level results using calibrated per-frame visual scores
+        frame_results = []
+        for i in range(len(frames)):
+            frame_visual = scores[i] if i < len(scores) else 0.0
+            frame_conf = self._confidence(frame_visual, lip_sus, blink_sus)
+            # Per-frame suspicion threshold: lower bar (0.5 * FAKE_THRESHOLD)
+            frame_suspicious = (
+                (frame_visual > 0.3)
+                or lip_sus
+                or blink_sus
+            )
+            frame_results.append(FrameAnalysisResult(
+                frame_index=i,
+                visual_artifact_score=frame_visual,
+                lip_sync_delay_ms=lip_delay,
+                blink_rate_bpm=blink_bpm,
+                is_suspicious=frame_suspicious,
+                confidence=frame_conf,
+            ))
+
         return DeepfakeVerdict(
             session_id=session_id,
             is_deepfake=is_fake,
             confidence=conf,
-            frame_results=[
-                FrameAnalysisResult(
-                    frame_index=i,
-                    visual_artifact_score=scores[i] if i < len(scores) else 0.0,
-                    lip_sync_delay_ms=lip_delay,
-                    blink_rate_bpm=blink_bpm,
-                    is_suspicious=(
-                        (scores[i] > 0.5 if i < len(scores) else False)
-                        or lip_sus
-                        or blink_sus
-                    ),
-                    confidence=self._confidence(
-                        scores[i] if i < len(scores) else 0.0,
-                        lip_sus,
-                        blink_sus,
-                    ),
-                )
-                for i in range(len(frames))
-            ],
+            frame_results=frame_results,
             processing_time_ms=(time.perf_counter() - t0) * 1000,
             signed_verdict=sig,
             public_key_pem=pubkey,

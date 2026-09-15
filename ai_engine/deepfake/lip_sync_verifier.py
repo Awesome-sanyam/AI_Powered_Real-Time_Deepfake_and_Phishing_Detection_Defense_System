@@ -7,7 +7,16 @@ by cross-correlating two signals derived from the same video segment:
   1. Lip aperture time-series  (dlib 68-point shape predictor, landmarks 62 & 66)
   2. Audio RMS energy envelope  (Librosa frame-level RMS)
 
-A cross-correlation peak lag > LIP_SYNC_THRESHOLD_MS (80 ms) indicates that
+CALIBRATION (v2):
+  - Threshold raised from 80ms → 160ms to eliminate false positives from
+    natural human A/V jitter and webcam capture pipeline latency.
+  - Zero-signal protection: if lip aperture signal variance is effectively
+    zero (no face / no lip movement), the verifier returns (0.0, False)
+    instead of marking it suspicious.
+  - Moving-average smoothing (window=5) on both signals before cross-
+    correlation to reduce high-frequency noise that biases the lag estimate.
+
+A cross-correlation peak lag > LIP_SYNC_THRESHOLD_MS (160 ms) indicates that
 the audio and video are out of phase, strongly suggesting synthetic manipulation.
 
 Face detection backend priority:
@@ -34,16 +43,23 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-LIP_SYNC_THRESHOLD_MS: float = 80.0
+# Raised from 80ms → 160ms — natural human A/V capture jitter can reach ≥80ms
+LIP_SYNC_THRESHOLD_MS: float = 160.0
 FRAME_LENGTH: int = 512
 HOP_LENGTH: int = 512
+
+# Moving-average smoothing window for noise reduction
+_SMOOTH_WINDOW: int = 5
+
+# Minimum variance below which a signal is considered zero (no information)
+_ZERO_SIGNAL_VARIANCE: float = 1e-6
 
 # dlib 68-point model — inner lip landmarks (0-indexed):
 #   62 = upper inner lip centre, 66 = lower inner lip centre
 _DLIB_UPPER_LIP = 62
 _DLIB_LOWER_LIP = 66
 
-# Resolve path relative to THIS FILE’s location, not the process CWD.
+# Resolve path relative to THIS FILE's location, not the process CWD.
 # This ensures the model loads correctly regardless of which directory
 # uvicorn is launched from.
 _DEFAULT_PREDICTOR_PATH = str(
@@ -76,11 +92,35 @@ def _build_dlib_detectors(predictor_path: str):
     return detector, predictor
 
 
+def _moving_average(signal: np.ndarray, window: int) -> np.ndarray:
+    """
+    Apply a causal moving-average filter to a 1-D signal.
+
+    Args:
+        signal: 1-D float32 numpy array.
+        window: Number of samples to average.
+
+    Returns:
+        Smoothed float32 array of the same length.
+    """
+    if len(signal) < window or window <= 1:
+        return signal.copy()
+    kernel = np.ones(window, dtype=np.float32) / window
+    # mode='full' gives len(signal) + window - 1; slice to original length
+    smoothed = np.convolve(signal, kernel, mode="full")[: len(signal)]
+    return smoothed.astype(np.float32)
+
+
 # ── LipSyncVerifier class ─────────────────────────────────────────────────────
 
 class LipSyncVerifier:
     """
     Cross-modal lip-sync analyser using dlib face landmarks + Librosa RMS.
+
+    Calibration changes (v2):
+      - Threshold: 160ms (was 80ms)
+      - Zero-signal guard: silent / no-face streams → (0.0, False)
+      - Moving-average smoothing before correlation (window=5)
 
     Usage:
         verifier = LipSyncVerifier()
@@ -164,14 +204,35 @@ class LipSyncVerifier:
         audio_signal: np.ndarray,
         fps: float,
     ) -> float:
-        """Compute the cross-correlation lag between lip and audio signals."""
+        """
+        Compute the cross-correlation lag between smoothed lip and audio signals.
+
+        Zero-signal protection: if either signal has effectively zero variance
+        (no lip movement detected, or silent audio), return 0.0 ms.
+
+        Smoothing: applies a moving-average filter before normalisation to
+        reduce high-frequency capture noise from the correlation estimate.
+        """
         n = min(len(lip_signal), len(audio_signal))
         if n < 2:
             return 0.0
+
         lip   = lip_signal[:n]
         audio = audio_signal[:n]
+
+        # Zero-signal guard — protect against pure-zero / flat signals
+        if lip.var() < _ZERO_SIGNAL_VARIANCE or audio.var() < _ZERO_SIGNAL_VARIANCE:
+            logger.debug("LipSync: zero-signal detected — returning 0.0 ms")
+            return 0.0
+
+        # Smooth both signals to reduce frame-capture noise
+        lip   = _moving_average(lip,   _SMOOTH_WINDOW)
+        audio = _moving_average(audio, _SMOOTH_WINDOW)
+
+        # Z-score normalise for scale-invariant correlation
         lip   = (lip   - lip.mean())   / (lip.std()   + 1e-8)
         audio = (audio - audio.mean()) / (audio.std() + 1e-8)
+
         correlation = np.correlate(lip, audio, mode="full")
         lag_frames = int(np.argmax(correlation)) - (n - 1)
         return abs(lag_frames) * (1000.0 / fps)
@@ -189,7 +250,7 @@ class LipSyncVerifier:
         Returns:
             (delay_ms, is_suspicious):
                 delay_ms       — computed lag in milliseconds.
-                is_suspicious  — True if delay > threshold_ms (80 ms).
+                is_suspicious  — True if delay > threshold_ms (160 ms).
         """
         lip_signal   = self.extract_lip_aperture(frames, fps)
         audio_signal = self.extract_audio_energy(audio_bytes)

@@ -5,8 +5,18 @@ Calculates per-video blink rate in beats per minute (BPM) using dlib's
 68-point face landmark predictor with Eye Aspect Ratio (EAR).
 
 Abnormal blink rates are a reliable deepfake signal:
-  - Too slow (< 8 BPM): Deepfakes often omit blink synthesis
+  - Too slow (< 8 BPM):  Deepfakes often omit blink synthesis
   - Too fast (> 30 BPM): GAN artefact from temporal instability
+
+CALIBRATION (v2):
+  - Minimum duration guard: blink analysis only activates after
+    MIN_ANALYSIS_FRAMES (300 frames ≈ 12 seconds at 25fps). Below this
+    threshold the sample is too small for reliable BPM estimation — returns
+    (0.0, False) instead of marking it suspicious.
+  - Zero-signal guard: if dlib detects no face in ≥ 90% of frames,
+    the segment is considered unanalysable — returns (0.0, False).
+  - EAR_THRESHOLD unchanged at 0.20 (empirically validated across
+    frontal webcam studies).
 
 Algorithm:
   EAR = (||p2-p6|| + ||p3-p5||) / (2 * ||p1-p4||)
@@ -20,7 +30,7 @@ dlib 68-pt right eye landmarks:
 
 Face detection backend priority:
   1. dlib HOG + 68-pt shape predictor (models/shape_predictor_68_face_landmarks.dat)
-  2. Graceful degradation to 0 BPM + suspicious=True
+  2. Graceful degradation to 0 BPM + suspicious=False (short/faceless segment)
 
 NOTE: MediaPipe ≥ 0.10.30 crashes on macOS arm64 (DrishtiMetal SIGABRT).
       dlib is used as the stable CPU-only replacement.
@@ -44,6 +54,14 @@ EAR_THRESHOLD: float = 0.20
 MIN_BPM: float       = 8.0
 MAX_BPM: float       = 30.0
 
+# Minimum number of frames before blink analysis is considered reliable.
+# 300 frames ≈ 12 seconds at 25fps — below this, BPM is statistically unstable.
+MIN_ANALYSIS_FRAMES: int = 300
+
+# If fewer than this fraction of frames contain a detected face, the segment
+# is unanalysable — return (0.0, False) instead of false-positive suspicious.
+_MIN_FACE_DETECTION_RATE: float = 0.10
+
 # dlib 68-pt right eye landmark indices (0-indexed)
 _LE_OUTER      = 36
 _LE_TOP_OUTER  = 37
@@ -52,7 +70,7 @@ _LE_INNER      = 39
 _LE_BOT_INNER  = 40
 _LE_BOT_OUTER  = 41
 
-# Resolve path relative to THIS FILE’s location, not the process CWD.
+# Resolve path relative to THIS FILE's location, not the process CWD.
 # This ensures the model loads correctly regardless of which directory
 # uvicorn is launched from.
 _DEFAULT_PREDICTOR_PATH = str(
@@ -90,6 +108,12 @@ def _build_dlib_detectors(predictor_path: str):
 class BlinkRateDetector:
     """
     Deepfake blink rate anomaly detector using dlib 68-pt EAR.
+
+    Calibration (v2):
+      - Returns (0.0, False) for short segments (< MIN_ANALYSIS_FRAMES).
+      - Returns (0.0, False) when face detection rate is too low to be reliable.
+      - This prevents false positives on short webcam bursts and partial
+        occlusion scenarios.
 
     Usage:
         detector = BlinkRateDetector()
@@ -134,6 +158,14 @@ class BlinkRateDetector:
         """
         Compute blink rate in BPM and flag abnormal values.
 
+        Calibration guards applied before scoring:
+          1. Minimum duration: segments shorter than MIN_ANALYSIS_FRAMES
+             (≈12 s) are considered too brief for reliable BPM estimation
+             and return (0.0, False).
+          2. Face detection rate: if fewer than _MIN_FACE_DETECTION_RATE of
+             frames contain a detected face, the segment is unanalysable
+             and returns (0.0, False).
+
         Args:
             frames: List of BGR uint8 np.ndarray video frames.
             fps:    Frames per second of the video stream.
@@ -141,16 +173,26 @@ class BlinkRateDetector:
         Returns:
             (blink_rate_bpm, is_suspicious):
                 blink_rate_bpm — blinks per minute (float).
-                is_suspicious  — True if BPM < min_bpm or BPM > max_bpm.
+                is_suspicious  — True if BPM < min_bpm or BPM > max_bpm,
+                                 AND the analysis is considered reliable.
         """
         if not frames:
-            return 0.0, True
+            return 0.0, False
+
+        # Duration guard — too short to estimate BPM reliably
+        if len(frames) < MIN_ANALYSIS_FRAMES:
+            logger.debug(
+                "BlinkDetector: segment too short (%d frames < %d) — skipping",
+                len(frames), MIN_ANALYSIS_FRAMES,
+            )
+            return 0.0, False
 
         if self._detector is None or self._predictor is None:
-            return 0.0, True
+            return 0.0, False
 
         blink_count = 0
         blink_in_progress = False
+        faces_detected = 0
 
         for frame in frames:
             try:
@@ -158,6 +200,7 @@ class BlinkRateDetector:
                 faces = self._detector(gray, 0)
                 if not faces:
                     continue
+                faces_detected += 1
                 shape = self._predictor(gray, faces[0])
                 ear   = self._compute_ear(shape)
                 if ear < self.ear_threshold and not blink_in_progress:
@@ -169,6 +212,15 @@ class BlinkRateDetector:
                 # Partial face occlusion or landmark extraction failure — skip frame
                 logger.debug("Blink detector skipped frame: %s", exc)
                 continue
+
+        # Face detection rate guard — unanalysable segment
+        detection_rate = faces_detected / len(frames)
+        if detection_rate < _MIN_FACE_DETECTION_RATE:
+            logger.debug(
+                "BlinkDetector: face detection rate too low (%.1f%%) — not suspicious",
+                detection_rate * 100,
+            )
+            return 0.0, False
 
         duration_minutes = len(frames) / (fps * 60.0)
         bpm = (blink_count / duration_minutes) if duration_minutes > 0 else 0.0
@@ -197,4 +249,4 @@ class BlinkRateDetector:
         pass
 
 
-__all__ = ["BlinkRateDetector", "EAR_THRESHOLD", "MIN_BPM", "MAX_BPM"]
+__all__ = ["BlinkRateDetector", "EAR_THRESHOLD", "MIN_BPM", "MAX_BPM", "MIN_ANALYSIS_FRAMES"]
