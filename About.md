@@ -2,7 +2,7 @@
 
 > **Enterprise Platform** | Zero-Trust Cybersecurity Architecture | Real-Time GenAI Threat Detection  
 > **Target Hardware:** Apple Silicon M-Series (M1/M2/M3/M4 with MPS) · NVIDIA CUDA (11.8/12.x) · Universal CPU Fallback  
-> **Lead Architect:** Sanyam Gehlot · **Collaborator & Core Contributor:** [Alefiya](https://github.com/alefiya12)  
+> **Lead Architect:** Sanyam Gehlot  
 > **Status:** ✅ **Production / Launch Ready** (100% Test Suite Pass Rate: 26/26 Launch Checks · 22/22 UI/UX Audits)
 
 ---
@@ -226,7 +226,7 @@ ai-defence-system/
 │
 ├── README.md                          ← Primary Enterprise Documentation & Quickstart
 ├── About.md                           ← Technical Architecture & System Blueprint (This file)
-├── LICENSE                            ← Open Source MIT License (Sanyam Gehlot, Alefiya)
+├── LICENSE                            ← Open Source MIT License (Sanyam Gehlot)
 ├── SECURITY.md                        ← Responsible Vulnerability Disclosure & Attestation Notice
 ├── CONTRIBUTING.md                    ← Contributor Guidelines, Maintainers & PR Standards
 ├── .env.example                       ← Environment Variable Template
@@ -504,4 +504,4 @@ pydantic>=2.7                  # Data validation and settings management using t
 
 ---
 
-*Authored by Sanyam Gehlot & [Alefiya](https://github.com/alefiya12) · Enterprise AI & Cybersecurity Architecture*
+*Authored by Sanyam Gehlot · Enterprise AI & Cybersecurity Architecture*

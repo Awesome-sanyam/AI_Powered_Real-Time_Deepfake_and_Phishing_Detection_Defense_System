@@ -20,7 +20,7 @@ hackathon showcase:
      multipliers and strict JSON intent analysis).
      Expected: confidence > 0.85 (Meters slam to RED).
 
-Author: Sanyam Gehlot & Alefiya
+Author: Sanyam Gehlot
 """
 from __future__ import annotations
 

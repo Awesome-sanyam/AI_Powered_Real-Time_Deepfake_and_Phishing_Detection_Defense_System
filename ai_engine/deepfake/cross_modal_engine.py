@@ -40,7 +40,7 @@ NOTE: MediaPipe ≥ 0.10.21 removed mp.solutions. All face detection now uses
 Hardware target: Apple Silicon M4 — uses torch.device("mps") with CPU fallback.
 Memory budget  : ≤ 2 GB peak (batch_size=4, fp16 inference).
 
-Author: Sanyam Gehlot & Alefiya
+Author: Sanyam Gehlot
 """
 from __future__ import annotations
 

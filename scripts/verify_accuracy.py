@@ -36,7 +36,7 @@ Exit codes:
     0 — All tests passed
     1 — One or more tests failed
 
-Author: Sanyam Gehlot & Alefiya
+Author: Sanyam Gehlot
 """
 from __future__ import annotations
 

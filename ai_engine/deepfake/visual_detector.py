@@ -36,7 +36,7 @@ Runs in fp16 on Apple MPS (Metal Performance Shaders) with CPU fallback.
 Sub-batch size is strictly capped at 4 frames to stay within the 16 GB M4
 memory budget.
 
-Author: Sanyam Gehlot & Alefiya
+Author: Sanyam Gehlot
 """
 from __future__ import annotations
 

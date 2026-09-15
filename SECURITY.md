@@ -89,7 +89,6 @@ We appreciate the responsible contributions of security researchers and ethical 
    * **Do NOT report security vulnerabilities via public GitHub issues.**
    * Contact the project maintainers privately:
      * **Sanyam Gehlot** ([@Awesome-sanyam](https://github.com/Awesome-sanyam))
-     * **Alefiya** ([@alefiya12](https://github.com/alefiya12))
 2. **Report Contents:**
    Please include:
    * Detailed description of the vulnerability.

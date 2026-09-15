@@ -6,8 +6,7 @@ Thank you for your interest in contributing to **DEFENCESYS**! We welcome contri
 
 ## 👥 Project Leadership & Core Maintainers
 
-* **Sanyam Gehlot** ([@Awesome-sanyam](https://github.com/Awesome-sanyam)) — *Lead Architect & Systems Engineer*
-* **Alefiya** ([@alefiya12](https://github.com/alefiya12)) — *Project Collaborator & Core Contributor*
+* **Sanyam Gehlot** ([@Awesome-sanyam](https://github.com/Awesome-sanyam)) — *Project Founder & Lead Maintainer*
 
 ---
 

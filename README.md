@@ -556,7 +556,7 @@ docker compose restart neo4j
 DEFENCESYS takes security vulnerabilities seriously. If you discover a security flaw or unintended behavior within this repository:
 * Review our guidelines in [SECURITY.md](SECURITY.md).
 * Do not file public GitHub issues for critical zero-day vulnerabilities.
-* Please submit a responsible disclosure report to the maintainers: **Sanyam Gehlot** & **Alefiya**.
+* Please submit a responsible disclosure report to the maintainer: **Sanyam Gehlot**.
 
 ---
 
@@ -566,12 +566,10 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 
 ---
 
-## 👥 Authors & Collaborators
+## 👤 Author & Maintainer
 
 * **Sanyam Gehlot** — *Lead Architect & Systems Engineer*
   * GitHub: [@Awesome-sanyam](https://github.com/Awesome-sanyam)
-* **Alefiya** — *Project Collaborator & Core Contributor*
-  * GitHub: [@alefiya12](https://github.com/alefiya12)
 
 * **Repository:** [Awesome-sanyam/AI_Powered_Real-Time_Deepfake_and_Phishing_Detection_Defense_System](https://github.com/Awesome-sanyam/AI_Powered_Real-Time_Deepfake_and_Phishing_Detection_Defense_System.git)
 

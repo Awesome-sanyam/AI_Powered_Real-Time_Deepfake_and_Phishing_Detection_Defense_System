@@ -35,7 +35,7 @@ CALIBRATION (v3 — BEC False Negative Fix):
   Tier 2 — Advanced heuristic engine (keyword density, urgency, SPF/DKIM)
   Tier 3 — Pure URL + header signal baseline (always succeeds)
 
-Author: Sanyam Gehlot & Alefiya
+Author: Sanyam Gehlot
 """
 from __future__ import annotations
 
