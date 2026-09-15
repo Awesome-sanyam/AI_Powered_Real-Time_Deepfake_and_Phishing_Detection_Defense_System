@@ -4,6 +4,12 @@ Thank you for your interest in contributing to **DEFENCESYS**! We welcome bug re
 
 ---
 
+## Project Leadership & Maintainers
+* **Sanyam Gehlot** ([@Awesome-sanyam](https://github.com/Awesome-sanyam)) — *Lead Architect*
+* **Alefiya** ([@alefiya12](https://github.com/alefiya12)) — *Project Collaborator & Core Contributor*
+
+---
+
 ## Code of Conduct
 
 * Be respectful and considerate of all contributors.

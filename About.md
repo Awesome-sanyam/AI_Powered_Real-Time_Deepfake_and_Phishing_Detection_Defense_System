@@ -2,7 +2,7 @@
 
 > **Enterprise Platform** | Zero-Trust Cybersecurity Architecture | Real-Time GenAI Threat Detection  
 > **Target Hardware:** Apple Silicon M-Series (M1/M2/M3/M4 with MPS) · NVIDIA CUDA (11.8/12.x) · Universal CPU Fallback  
-> **Primary Author & Lead Architect:** Sanyam Gehlot  
+> **Lead Architect:** Sanyam Gehlot · **Collaborator & Core Contributor:** [Alefiya](https://github.com/alefiya12)  
 > **Status:** ✅ **Production / Launch Ready** (100% Test Suite Pass Rate: 26/26 Launch Checks · 22/22 UI/UX Audits)
 
 ---
@@ -411,4 +411,4 @@ The complete dependency manifest is version-pinned and split across the orchestr
 
 ---
 
-*Authored by Sanyam Gehlot · Enterprise AI & Cybersecurity Architecture*
+*Authored by Sanyam Gehlot & [Alefiya](https://github.com/alefiya12) · Enterprise AI & Cybersecurity Architecture*

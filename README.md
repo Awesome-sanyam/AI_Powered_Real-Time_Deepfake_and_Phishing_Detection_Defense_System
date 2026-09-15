@@ -523,8 +523,12 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 
 ---
 
-## 👤 Author & Acknowledgments
+## 👥 Authors & Collaborators
 
 * **Sanyam Gehlot** — *Lead Architect & Systems Engineer*
-* GitHub: [@Awesome-sanyam](https://github.com/Awesome-sanyam)
-* Repository: [Awesome-sanyam/AI_Powered_Real-Time_Deepfake_and_Phishing_Detection_Defense_System](https://github.com/Awesome-sanyam/AI_Powered_Real-Time_Deepfake_and_Phishing_Detection_Defense_System.git)
+  * GitHub: [@Awesome-sanyam](https://github.com/Awesome-sanyam)
+* **Alefiya** — *Project Collaborator & Core Contributor*
+  * GitHub: [@alefiya12](https://github.com/alefiya12)
+
+* **Repository:** [Awesome-sanyam/AI_Powered_Real-Time_Deepfake_and_Phishing_Detection_Defense_System](https://github.com/Awesome-sanyam/AI_Powered_Real-Time_Deepfake_and_Phishing_Detection_Defense_System.git)
+
