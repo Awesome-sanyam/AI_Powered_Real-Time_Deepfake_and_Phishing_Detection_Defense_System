@@ -396,6 +396,49 @@ Role:     SOC Security Analyst (Level 3)
 | `/api/identity/keys/` | `GET` | Session | Active ECDSA public keys in PEM format |
 | `/api/identity/verify/` | `POST` | Session | Verifies an arbitrary signature against a verdict payload |
 
+#### Sample REST Payloads
+
+**Cryptographic Signature Verification (`POST /api/identity/verify/`):**
+```json
+// Request Body:
+{
+  "payload": "session-4412|deepfake=False|confidence=0.4500|ts=1726321200",
+  "signature": "3045022100d5c2f0ba91cf05559fd9...",
+  "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----"
+}
+
+// Response Body (HTTP 200):
+{
+  "verified": true,
+  "algorithm": "ECDSA_P256_SHA256",
+  "timestamp": 1726321200.452
+}
+```
+
+**Forensic Breakdown Session Details (`GET /api/deepfake/sessions/<id>/`):**
+```json
+// Response Body (HTTP 200):
+{
+  "session_id": "f99f34e1-68f5-42ee-968b-1bc385e49f75",
+  "is_deepfake": false,
+  "confidence": 0.454,
+  "lip_sync_delay_ms": 0.0,
+  "blink_rate_bpm": 16.0,
+  "frames_sampled": 8,
+  "frame_results": [
+    {
+      "frame_index": 0,
+      "visual_artifact_score": 0.082,
+      "lip_sync_delay_ms": 0.0,
+      "blink_rate_bpm": 16.0,
+      "is_suspicious": false
+    }
+  ],
+  "ecdsa_verified": true,
+  "signed_verdict": "3045022100e4b8..."
+}
+```
+
 ### Real-Time WebSocket Channels
 
 #### 1. Live Video Stream: `ws://localhost:8000/ws/deepfake/<session_id>/`
@@ -513,7 +556,7 @@ docker compose restart neo4j
 DEFENCESYS takes security vulnerabilities seriously. If you discover a security flaw or unintended behavior within this repository:
 * Review our guidelines in [SECURITY.md](SECURITY.md).
 * Do not file public GitHub issues for critical zero-day vulnerabilities.
-* Please submit a responsible disclosure report to the author.
+* Please submit a responsible disclosure report to the maintainers: **Sanyam Gehlot** & **Alefiya**.
 
 ---
 

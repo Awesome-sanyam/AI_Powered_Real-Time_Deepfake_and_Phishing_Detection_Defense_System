@@ -1,58 +1,111 @@
-# AI Model Assets
+# 🧠 AI Model Assets & Neural Weights Specification
 
-This directory holds binary model files that are **not tracked by git** (see `.gitignore`).
+This directory holds the pre-trained neural network weights, task graphs, and quantized language model binaries utilized by the **DEFENCESYS AI Microservice**.
 
-## Required Files
+> [!IMPORTANT]
+> Binary weight files are deliberately excluded from Git tracking via `.gitignore` to keep repository size lean and prevent Git LFS bandwidth limits. Ensure all required models are downloaded before starting the AI microservice.
 
-### 1. `face_landmarker.task` — MediaPipe Face Landmark Detection
-Used by: `ai_engine/deepfake/lip_sync_verifier.py`, `ai_engine/deepfake/blink_detector.py`
+---
 
-**Download (3.6 MB):**
+## 📋 Model Inventory & Technical Specifications
+
+| Asset File | Architecture / Backbone | Parameters / Precision | Size | Primary Subsystem | Hardware Accelerator |
+|---|---|---|---|---|---|
+| **`face_landmarker.task`** | MediaPipe Face Mesh | 468 3D Landmarks (`fp16`) | 3.6 MB | `lip_sync_verifier.py`, `blink_detector.py` | CPU / GPU delegate |
+| **`shape_predictor_68_face_landmarks.dat`** | Ensemble of Regression Trees (dlib) | 68 Facial Landmarks | 99.7 MB | Fallback Landmark Extractor | Multi-threaded CPU |
+| **`Llama-3.2-3B-Instruct-Q4_K_M.gguf`** | LLaMA 3.2 Dense Transformer | 3.21B Params (`Q4_K_M` Quantized) | 2.02 GB | `llm_analyzer.py` (Phishing Intent) | Apple Metal (MPS) / CUDA / CPU |
+
+---
+
+## 📥 Download Instructions
+
+### 1. MediaPipe Face Landmarker (`face_landmarker.task`)
+Used for real-time extraction of 468 facial landmark coordinates, oral aperture calculation, and 3D eye aspect ratio measurement.
+
 ```bash
+# Execute from repository root
 curl -L "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task" \
      -o models/face_landmarker.task
 ```
 
-### 2. `shape_predictor_68_face_landmarks.dat` — dlib 68-point Face Landmark Predictor
-Used by: `ai_engine/deepfake/lip_sync_verifier.py`, `ai_engine/deepfake/blink_detector.py`
+### 2. dlib 68-Point Face Landmark Predictor (`shape_predictor_68_face_landmarks.dat`)
+Used as an ultra-reliable, POSIX-stable facial landmark predictor when MediaPipe experiences native driver conflicts on certain operating system builds.
 
-> ⚠️ **Note:** MediaPipe ≥ 0.10.30 crashes on macOS arm64 (known DrishtiMetal bug). dlib is used as the stable CPU-only replacement.
-
-**Download (95 MB):**
 ```bash
-# Official dlib model from the project author's Dropbox
+# Execute from repository root
 curl -L "http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" \
      -o models/shape_predictor_68_face_landmarks.dat.bz2 && \
      bzip2 -d models/shape_predictor_68_face_landmarks.dat.bz2
 ```
 
-### 3. `llama-3.2-3b-instruct-q4_k_m.gguf` — LLaMA 3.2 3B Instruct (4-bit)
-Used by: `ai_engine/phishing/llm_analyzer.py` — LLM-powered phishing intent classification.
+### 3. Meta LLaMA 3.2 3B Instruct — 4-bit Quantized (`Llama-3.2-3B-Instruct-Q4_K_M.gguf`)
+Used by the Phishing Detection Engine for local, zero-leakage semantic analysis of suspicious emails, executive impersonation lures, and credential extortion attempts.
 
-**Download (~2 GB):**
+#### Option A: Hugging Face CLI (Recommended — Fast & Resumable)
 ```bash
-# Option A: Hugging Face CLI (recommended)
 pip install huggingface_hub
 hf download bartowski/Llama-3.2-3B-Instruct-GGUF \
     Llama-3.2-3B-Instruct-Q4_K_M.gguf \
     --local-dir models/
-
-# Option B: Direct curl (may be slow)
-curl -L "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf" \
-     -o "models/llama-3.2-3b-instruct-q4_k_m.gguf"
 ```
 
-Set the env variable to match your filename:
+#### Option B: Direct cURL Download
 ```bash
-export GGUF_MODEL_PATH="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+curl -L "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf" \
+     -o "models/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
 ```
 
-## Fallback Behaviour
+#### Option C: Automated Script
+```bash
+bash scripts/download_models.sh
+```
 
-| Model | Missing Behaviour |
-|---|---|
-| `face_landmarker.task` | Lip-sync and blink detectors return 0 / suspicious=True. Visual detector still works. |
-| `*.gguf` | Phishing analysis falls back to URL heuristics + header analysis only (no LLM intent scoring). |
+---
 
-> [!NOTE]
-> The system is designed to degrade gracefully. All endpoints remain reachable even without model files.
+## 🛡️ Model Integrity Verification (SHA-256)
+
+Validate downloaded binaries against reference SHA-256 cryptographic checksums:
+
+```bash
+# macOS (shasum)
+shasum -a 256 models/*
+
+# Linux (sha256sum)
+sha256sum models/*
+```
+
+---
+
+## ⚙️ Memory Budgets & Runtime Allocation
+
+| Asset | RAM / VRAM Footprint | Context Size (`n_ctx`) | Batch Limit | MPS / CUDA Offloading |
+|---|---|---|---|---|
+| `face_landmarker.task` | ~85 MB | N/A | 1 frame/pass | Automatic delegate |
+| `shape_predictor_68_face_landmarks.dat` | ~120 MB | N/A | 1 frame/pass | Multi-threaded CPU |
+| `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | ~2.2 GB | 512 tokens | 1 prompt | Fully offloaded to GPU layers (`n_gpu_layers=-1`) |
+
+---
+
+## 🔄 Graceful Fallback Matrix
+
+The DEFENCESYS architecture is designed with **defense-in-depth fault tolerance**. The system will never crash or return unhandled 500 exceptions if a model file is missing:
+
+| Missing Model | Degraded Behavior | End-to-End Status |
+|---|---|:---:|
+| **`face_landmarker.task` missing** | Automatically routes landmark tracking to `shape_predictor_68_face_landmarks.dat` (dlib). If both are absent, lip-sync delay is marked as `suspicious=True` and visual artifact detection (MobileNetV2) proceeds normally. | ⚠️ **Degraded (Operational)** |
+| **`Llama-3.2-3B-Instruct-Q4_K_M.gguf` missing** | Phishing scanner seamlessly bypasses LLM intent scoring and evaluates threats using regex heuristics, Shannon URL entropy, homoglyph mapping, and SPF/DKIM header forensics. | ⚠️ **Degraded (Operational)** |
+| **All models present** | Full multi-modal temporal cross-correlation, biological blink tracking, and neural intent analysis. | ✅ **Optimal (100% Functionality)** |
+
+---
+
+## 🔧 Environment Configuration
+
+Ensure your `.env` configuration file points to the correct paths:
+
+```dotenv
+# Models configuration
+GGUF_MODEL_PATH=models/Llama-3.2-3B-Instruct-Q4_K_M.gguf
+LLM_N_CTX=512
+LLM_N_THREADS=4
+LLM_MAX_TOKENS=256
+```
